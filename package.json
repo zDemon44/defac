@@ -1,0 +1,27 @@
+{
+  "name": "sri-xml-client",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cliente local minimo para consultar autorizaciones de comprobantes electronicos del SRI.",
+  "scripts": {
+    "check": "tsc --noEmit",
+    "check:wsdl": "tsx src/checkWsdl.ts",
+    "consultar": "tsx src/index.ts",
+    "probar:archivos": "tsx src/inspectSamples.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.2",
+    "fast-xml-parser": "^5.2.5",
+    "soap": "^1.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.1",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
