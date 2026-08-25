@@ -6,17 +6,26 @@
   "scripts": {
     "check": "tsc --noEmit",
     "check:wsdl": "tsx src/checkWsdl.ts",
+    "check:db": "tsx src/checkDatabase.ts",
     "consultar": "tsx src/index.ts",
+    "procesar:lote": "tsx src/processBatch.ts",
+    "web": "tsx src/server.ts",
     "probar:archivos": "tsx src/inspectSamples.ts",
     "test": "vitest run"
   },
   "dependencies": {
     "dotenv": "^17.2.2",
     "fast-xml-parser": "^5.2.5",
+    "express": "^5.1.0",
+    "multer": "^2.0.2",
+    "mysql2": "^3.14.5",
+    "p-limit": "^7.1.1",
     "soap": "^1.6.0"
   },
   "devDependencies": {
     "@types/node": "^22.18.1",
+    "@types/express": "^5.0.3",
+    "@types/multer": "^2.0.0",
     "tsx": "^4.20.5",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"

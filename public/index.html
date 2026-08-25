@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Descargador de XML · SRI</title>
+    <meta name="description" content="Procesamiento local de comprobantes electrónicos del SRI." />
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/report.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">PROCESAMIENTO LOCAL · ECUADOR</p>
+          <h1>Descargador de XML <span>SRI</span></h1>
+          <p class="subtitle">Importa tu lote, recupera los comprobantes disponibles y completa los históricos cargando su XML.</p>
+        </div>
+        <div class="connection"><span></span><div><small>Servicio</small><strong id="connectionText">Comprobando…</strong></div></div>
+      </header>
+
+      <section class="card active-company-bar">
+        <div class="active-company-title"><span class="step">E</span><div><small>EMPRESA ACTIVA</small><strong>Selecciona con quién estás trabajando</strong></div></div>
+        <label><span>Empresa</span><select id="companySelect" required><option value="">Primero registra una empresa</option></select></label>
+        <label><span>RUC / identificación</span><input id="companyTaxId" placeholder="—" readonly /></label>
+        <div class="company-actions"><button class="text-button" id="newCompanyButton" type="button">+ Nueva empresa</button><button class="text-button" id="editCompanyButton" type="button" disabled>Editar</button></div>
+      </section>
+
+      <nav class="module-tabs" aria-label="Módulos de comprobantes">
+        <button class="module-tab active" data-module="purchases" type="button"><span>Compras</span><small id="purchaseCount">0 facturas guardadas</small></button>
+        <button class="module-tab" data-module="sales" type="button"><span>Ventas</span><small id="saleCount">Próximamente</small></button>
+        <button class="module-tab" data-module="reports" type="button"><span>Descargar reporte</span><small>Compras, ventas o ambas</small></button>
+      </nav>
+
+      <div id="purchasesModule">
+      <div class="purchase-toolbar"><div class="view-switch"><button class="view-button active" data-purchase-view="saved" type="button">Facturas guardadas</button><button class="view-button" data-purchase-view="import" type="button">+ Importar facturas</button></div></div>
+      <section class="card table-card" id="savedPurchasesView"><div class="table-toolbar"><div><span class="step">C</span><h2>Compras guardadas</h2></div><input id="savedSearch" type="search" placeholder="Buscar factura, RUC o proveedor" /></div><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Factura</th><th>RUC proveedor</th><th>Razón social</th><th>Subtotal</th><th>IVA</th><th>Total</th></tr></thead><tbody id="savedPurchasesBody"></tbody></table></div><div class="empty" id="savedEmpty">Todavía no hay facturas guardadas para esta empresa.</div></section>
+      <div class="hidden" id="importPurchasesView">
+      <section class="card setup-card">
+        <div class="section-heading"><div><span class="step">01</span><h2>Información del proceso</h2></div><p>El lote se asociará con la empresa activa.</p></div>
+        <form id="batchForm">
+          <input name="companyId" id="batchCompanyId" type="hidden" />
+          <div class="form-grid period-grid">
+            <label><span>Año</span><select name="year" id="year"></select></label>
+            <label><span>Mes</span><select name="month" id="month"></select></label>
+          </div>
+          <div class="file-row">
+            <label class="dropzone" for="txtFile">
+              <span class="file-icon">TXT</span>
+              <span><strong id="txtLabel">Seleccionar archivo del SRI</strong><small>Archivo TXT o TSV con claves de acceso</small></span>
+              <input id="txtFile" name="txt" type="file" accept=".txt,.tsv,text/plain" required />
+            </label>
+            <button class="button primary" type="submit">Importar lote</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="workspace hidden" id="workspace">
+        <div class="summary-grid" id="summary"></div>
+        <section class="card actions-card">
+          <div><span class="step">02</span><div><h2>Procesamiento</h2><p id="processHint">El lote está listo para consultar.</p></div></div>
+          <div class="actions">
+            <button class="button excel disabled" id="excelButton" disabled>Generar Excel</button>
+            <label class="button secondary disabled" id="xmlButton">Cargar XML faltantes<input id="xmlFiles" type="file" accept=".xml,text/xml,application/xml" multiple disabled /></label>
+            <button class="button primary" id="processButton">Consultar SRI</button>
+          </div>
+        </section>
+        <section class="card table-card">
+          <div class="table-toolbar"><div><span class="step">03</span><h2>Facturas del lote</h2></div><div class="filter"><input id="search" type="search" placeholder="Buscar factura o proveedor" /><select id="statusFilter"><option value="">Todos los estados</option></select></div></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Factura</th><th>Proveedor</th><th>Clave de acceso</th><th>Estado</th><th>Resultado</th></tr></thead>
+              <tbody id="resultsBody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="emptyState">Importa un archivo para comenzar.</div>
+        </section>
+      </section>
+      </div>
+      </div>
+      <div class="hidden" id="salesModule">
+        <div class="purchase-toolbar"><div class="view-switch"><button class="view-button active" data-sales-view="saved" type="button">Ventas guardadas</button><button class="view-button" data-sales-view="import" type="button">+ Importar ventas</button></div></div>
+        <section class="card table-card" id="savedSalesView"><div class="table-toolbar"><div><span class="step">V</span><h2>Ventas guardadas</h2></div><input id="salesSearch" type="search" placeholder="Buscar factura o cliente" /></div><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Factura</th><th>Identificación cliente</th><th>Cliente</th><th>Subtotal</th><th>IVA</th><th>Total</th></tr></thead><tbody id="savedSalesBody"></tbody></table></div><div class="empty" id="salesEmpty">Todavía no hay ventas guardadas.</div></section>
+        <div class="hidden" id="importSalesView"><section class="card setup-card"><div class="section-heading"><div><span class="step">01</span><h2>Importar ventas</h2></div></div><form id="salesBatchForm"><input name="companyId" id="salesCompanyId" type="hidden"/><div class="form-grid"><label><span>Método de importación</span><select name="method" id="salesMethod"><option value="SRI">Facturador SRI</option><option value="SECURITY_DATA" disabled>Security Data · En desarrollo</option></select></label><label><span>Año</span><select name="year" id="salesYear"></select></label><label><span>Mes</span><select name="month" id="salesMonth"></select></label></div><div class="warning-box"><strong>Verifica la empresa activa</strong><p>Este TXT no contiene el RUC del emisor. Confirma que fue exportado por la empresa seleccionada. El XML se validará nuevamente antes de guardarse.</p><label class="check-row"><input name="confirmCompany" value="true" type="checkbox" required/><span>Confirmo que este archivo corresponde a la empresa activa.</span></label></div><div class="file-row"><label class="dropzone" for="salesTxtFile"><span class="file-icon">TXT</span><span><strong id="salesTxtLabel">Seleccionar TXT de ventas</strong><small>Exportación del Facturador SRI</small></span><input id="salesTxtFile" name="txt" type="file" accept=".txt,.tsv,text/plain" required/></label><button class="button primary" type="submit">Importar ventas</button></div></form></section><section class="workspace hidden" id="salesWorkspace"><div class="summary-grid" id="salesSummary"></div><section class="card actions-card"><div><span class="step">02</span><div><h2>Procesar ventas</h2><p>Consulta el SRI y carga manualmente los XML fuera de rango.</p></div></div><div class="actions"><label class="button secondary disabled" id="salesXmlButton">Cargar XML faltantes<input id="salesXmlFiles" type="file" accept=".xml" multiple disabled/></label><button class="button primary" id="salesProcessButton">Consultar SRI</button></div></section><section class="card table-card"><div class="table-wrap"><table><thead><tr><th>Factura</th><th>Cliente</th><th>Clave de acceso</th><th>Estado</th><th>Resultado</th></tr></thead><tbody id="salesResultsBody"></tbody></table></div></section></section></div>
+      </div>
+      <section class="card report-module hidden" id="reportsModule">
+        <div class="section-heading"><div><span class="step">R</span><div><h2>Descargar reporte</h2><p>Genera un Excel desde los comprobantes guardados de la empresa activa.</p></div></div></div>
+        <form id="reportForm">
+          <div class="report-grid"><label><span>Comprobantes</span><select name="movement"><option value="PURCHASE">Compras</option><option value="SALE">Ventas</option><option value="BOTH">Compras y ventas</option></select></label><label><span>Tipo de período</span><select id="reportMode"><option value="month">Año y mes</option><option value="semester">Año y semestre</option><option value="custom">Rango personalizado</option></select></label></div>
+          <div class="report-grid" id="monthlyReportFields"><label><span>Año</span><select id="reportYear"></select></label><label><span>Mes</span><select id="reportMonth"></select></label></div>
+          <div class="report-grid hidden" id="semesterReportFields"><label><span>Año</span><select id="semesterYear"></select></label><label><span>Semestre</span><select id="reportSemester"><option value="1">Primer semestre · Enero a junio</option><option value="2">Segundo semestre · Julio a diciembre</option></select></label></div>
+          <div class="report-grid hidden" id="customReportFields"><label><span>Desde</span><input id="reportFrom" type="date" /></label><label><span>Hasta</span><input id="reportTo" type="date" /></label></div>
+          <div class="report-submit"><p id="reportCompany">Selecciona una empresa para generar el reporte.</p><button class="button primary" id="reportButton" type="submit">Descargar Excel</button></div>
+        </form>
+      </section>
+      <div class="toast" id="toast" role="status"></div>
+    </main>
+    <dialog id="companyDialog">
+      <form id="companyForm" method="dialog">
+        <div class="dialog-heading"><div><p class="eyebrow">EMPRESA</p><h2 id="companyDialogTitle">Nueva empresa</h2></div><button class="close-button" id="closeCompanyDialog" type="button" aria-label="Cerrar">×</button></div>
+        <input name="id" type="hidden" />
+        <div class="dialog-grid">
+          <label><span>RUC / identificación</span><input name="taxId" inputmode="numeric" maxlength="13" required /></label>
+          <label><span>Razón social</span><input name="businessName" required /></label>
+          <label><span>Nombre comercial</span><input name="tradeName" /></label>
+          <label><span>Correo</span><input name="email" type="email" /></label>
+          <label><span>Teléfono</span><input name="phone" /></label>
+        </div>
+        <div class="dialog-actions"><button class="button secondary" id="cancelCompanyButton" type="button">Cancelar</button><button class="button primary" type="submit">Guardar empresa</button></div>
+      </form>
+    </dialog>
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>

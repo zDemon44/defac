@@ -41,6 +41,8 @@ export interface NormalizedInvoice {
   version: string;
   ruc: string;
   businessName: string;
+  recipientIdentification: string;
+  recipientBusinessName?: string;
   issueDate: string;
   accessKey: string;
   authorizationNumber?: string;
@@ -54,6 +56,7 @@ export interface NormalizedInvoice {
   tip: number;
   total: number;
   vatTotal: number;
+  taxes: TaxAmount[];
   vat: VatSummary;
   paymentMethods: string[];
   details: InvoiceDetail[];

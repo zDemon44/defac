@@ -54,12 +54,15 @@ export function parseInvoiceXml(xml: string): NormalizedInvoice {
   const establishment = requiredText(taxInfo.estab, "infoTributaria.estab");
   const emissionPoint = requiredText(taxInfo.ptoEmi, "infoTributaria.ptoEmi");
   const sequential = requiredText(taxInfo.secuencial, "infoTributaria.secuencial");
+  const recipientBusinessName = optionalText(invoiceInfo.razonSocialComprador);
 
   return {
     type: "FACTURA",
     version: optionalText(invoiceRoot["@_version"]) ?? "",
     ruc: requiredText(taxInfo.ruc, "infoTributaria.ruc"),
     businessName: requiredText(taxInfo.razonSocial, "infoTributaria.razonSocial"),
+    recipientIdentification: requiredText(invoiceInfo.identificacionComprador, "infoFactura.identificacionComprador"),
+    ...(recipientBusinessName ? { recipientBusinessName } : {}),
     issueDate: requiredText(invoiceInfo.fechaEmision, "infoFactura.fechaEmision"),
     accessKey,
     ...(authorizationNumber ? { authorizationNumber } : {}),
@@ -73,6 +76,7 @@ export function parseInvoiceXml(xml: string): NormalizedInvoice {
     tip: parseDecimal(invoiceInfo.propina, "propina"),
     total: parseDecimal(invoiceInfo.importeTotal, "importeTotal"),
     vatTotal: roundMoney(taxes.filter((tax) => tax.code === "2").reduce((sum, tax) => sum + tax.value, 0)),
+    taxes,
     vat,
     paymentMethods: asArray<XmlRecord>(invoiceInfo.pagos?.pago)
       .map((payment) => optionalText(payment.formaPago))
