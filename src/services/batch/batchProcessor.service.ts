@@ -9,6 +9,7 @@ import { queryAuthorization } from "../../sri/sriAuthorization.service.js";
 import { queryValidity } from "../../sri/sriValidity.service.js";
 import { withRetry } from "../../utils/retry.js";
 import { identificationsMatch } from "../../utils/identification.js";
+import { validateInvoiceOwnership, type InvoiceMovement } from "../validation/invoiceOwnership.service.js";
 
 export interface BatchProcessorOptions {
   authorizationClient: Client;
@@ -19,6 +20,8 @@ export interface BatchProcessorOptions {
   retryDelayMs: number;
   environment: "test" | "production";
   inputFile: string;
+  companyTaxId?: string;
+  movement?: InvoiceMovement;
 }
 
 export async function processBatch(
@@ -69,6 +72,7 @@ async function processOne(
       const invoice = parseInvoiceXml(await readFile(xmlPath, "utf8"));
       if (invoice.accessKey !== row.accessKey) throw new Error("La clave interna no coincide.");
       if (!identificationsMatch(invoice.recipientIdentification, row.recipientIdentification)) throw new Error("El receptor del XML no coincide con el receptor del TXT.");
+      if (options.companyTaxId && options.movement) validateInvoiceOwnership(invoice, options.companyTaxId, options.movement);
       return { ...base, status: "YA_DESCARGADO", xmlPath };
     } catch (error) {
       return { ...base, status: "ERROR", xmlPath, message: `XML existente invalido: ${errorMessage(error)}` };
@@ -88,6 +92,7 @@ async function processOne(
       const parsed = parseInvoiceXml(authorized.comprobante);
       if (parsed.accessKey !== row.accessKey) throw new Error("La clave del XML descargado no coincide con la consultada.");
       if (!identificationsMatch(parsed.recipientIdentification, row.recipientIdentification)) throw new Error("El receptor del XML no coincide con la empresa seleccionada.");
+      if (options.companyTaxId && options.movement) validateInvoiceOwnership(parsed, options.companyTaxId, options.movement);
       await writeFile(xmlPath, authorized.comprobante, { encoding: "utf8", flag: "wx" });
       return {
         ...base,

@@ -15,17 +15,19 @@
   },
   "dependencies": {
     "dotenv": "^17.2.2",
-    "fast-xml-parser": "^5.2.5",
+    "exceljs": "^4.4.0",
     "express": "^5.1.0",
+    "fast-xml-parser": "^5.2.5",
     "multer": "^2.0.2",
     "mysql2": "^3.14.5",
     "p-limit": "^7.1.1",
-    "soap": "^1.6.0"
+    "soap": "^1.6.0",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
-    "@types/node": "^22.18.1",
     "@types/express": "^5.0.3",
     "@types/multer": "^2.0.0",
+    "@types/node": "^22.18.1",
     "tsx": "^4.20.5",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"
