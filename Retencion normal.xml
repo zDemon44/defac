@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<autorizacion>
+<estado>AUTORIZADO</estado>
+<numeroAutorizacion>0508202607019041939800120031000000079477777777710</numeroAutorizacion>
+<fechaAutorizacion>2026-08-05T09:37:45-05:00</fechaAutorizacion>
+<ambiente>PRODUCCIÓN</ambiente>
+<comprobante><![CDATA[<?xml version="1.0" encoding="UTF-8"?><comprobanteRetencion id="comprobante" version="2.0.0">
+  <infoTributaria>
+    <ambiente>2</ambiente>
+    <tipoEmision>1</tipoEmision>
+    <razonSocial>AGRICOLA CADULAGRO CIA. LTDA.</razonSocial>
+    <nombreComercial>AGRICOLA CADULAGRO CIA. LTDA.</nombreComercial>
+    <ruc>0190419398001</ruc>
+    <claveAcceso>0508202607019041939800120031000000079477777777710</claveAcceso>
+    <codDoc>07</codDoc>
+    <estab>003</estab>
+    <ptoEmi>100</ptoEmi>
+    <secuencial>000007947</secuencial>
+    <dirMatriz>GUAYAQUIL / CHONGON / KM 35 VIA A LA COSTA S/N Y SN</dirMatriz>
+    <agenteRetencion>1</agenteRetencion>
+  </infoTributaria>
+  <infoCompRetencion>
+    <fechaEmision>05/08/2026</fechaEmision>
+    <dirEstablecimiento>GUAYAS / GUAYAQUIL / CHONGON / VIA A CAMARONERAS RAMAL S/N</dirEstablecimiento>
+    <obligadoContabilidad>SI</obligadoContabilidad>
+    <tipoIdentificacionSujetoRetenido>04</tipoIdentificacionSujetoRetenido>
+    <parteRel>NO</parteRel>
+    <razonSocialSujetoRetenido>GUTIERREZ ARMENDARIZ TERESA GRACE</razonSocialSujetoRetenido>
+    <identificacionSujetoRetenido>0908653132001</identificacionSujetoRetenido>
+    <periodoFiscal>08/2026</periodoFiscal>
+  </infoCompRetencion>
+  <docsSustento>
+    <docSustento>
+      <codSustento>02</codSustento>
+      <codDocSustento>01</codDocSustento>
+      <numDocSustento>001002000000578</numDocSustento>
+      <fechaEmisionDocSustento>03/08/2026</fechaEmisionDocSustento>
+      <numAutDocSustento>0308202601090865313200120010020000005784848696111</numAutDocSustento>
+      <pagoLocExt>01</pagoLocExt>
+      <totalSinImpuestos>89.10</totalSinImpuestos>
+      <importeTotal>96.67</importeTotal>
+      <impuestosDocSustento>
+        <impuestoDocSustento>
+          <codImpuestoDocSustento>2</codImpuestoDocSustento>
+          <codigoPorcentaje>4</codigoPorcentaje>
+          <baseImponible>89.10</baseImponible>
+          <tarifa>15</tarifa>
+          <valorImpuesto>13.36</valorImpuesto>
+        </impuestoDocSustento>
+      </impuestosDocSustento>
+      <retenciones>
+        <retencion>
+          <codigo>2</codigo>
+          <codigoRetencion>1</codigoRetencion>
+          <baseImponible>13.36</baseImponible>
+          <porcentajeRetener>30.00</porcentajeRetener>
+          <valorRetenido>4.01</valorRetenido>
+        </retencion>
+        <retencion>
+          <codigo>1</codigo>
+          <codigoRetencion>312</codigoRetencion>
+          <baseImponible>89.10</baseImponible>
+          <porcentajeRetener>2.00</porcentajeRetener>
+          <valorRetenido>1.78</valorRetenido>
+        </retencion>
+      </retenciones>
+      <pagos>
+        <pago>
+          <formaPago>20</formaPago>
+          <total>96.67</total>
+        </pago>
+      </pagos>
+    </docSustento>
+  </docsSustento>
+  <infoAdicional>
+    <campoAdicional nombre="BANANO CERTIFICADO">GLOBALG.A.P</campoAdicional>
+    <campoAdicional nombre="GGN">4063651795127</campoAdicional>
+    <campoAdicional nombre="Dirección:">GUAYAS / GUAYAQUIL / FEBRES CORDERO / CAPITAN NAJERA 5218 Y 24AVA Y 25AVA</campoAdicional>
+    <campoAdicional nombre="Emitido por:">Camila Mesias camilamesiasm@outlook.com</campoAdicional>
+  </infoAdicional>
+<ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#" xmlns:etsi="http://uri.etsi.org/01903/v1.3.2#" Id="Signature674609">
+<ds:SignedInfo Id="Signature-SignedInfo4103">
+<ds:CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/>
+<ds:SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"/>
+<ds:Reference Id="SignedPropertiesID822345" Type="http://uri.etsi.org/01903#SignedProperties" URI="#Signature674609-SignedProperties739648">
+<ds:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/>
+<ds:DigestValue>tMdJUC3Dx+1A/1YOt7g+9COrRtg=</ds:DigestValue>
+</ds:Reference>
+<ds:Reference URI="#Certificate11042981">
+<ds:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/>
+<ds:DigestValue>h56e9I99Ypt9UgEls7XUmU09Um0=</ds:DigestValue>
+</ds:Reference>
+<ds:Reference Id="Reference-ID-138176" URI="#comprobante">
+<ds:Transforms>
+<ds:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/>
+</ds:Transforms>
+<ds:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/>
+<ds:DigestValue>TpzRxtp9sJynwYtunPZdqR6hwgI=</ds:DigestValue>
+</ds:Reference>
+</ds:SignedInfo>
+<ds:SignatureValue Id="SignatureValue725087">
+mv1agRIFIMQpjBgU5gGQh+51WurLsM+E79AvNNmJ5k5I1BKvlCxybVMkm6Q16PLUlB6TSvB0QOpm
+i2zaXEok75jY5YrSNE+MxNG4iNdxZ78SuVcM0gMWqqt+gOpRxcH9fzAzXL32bO11RKA9UymClnz2
+a0cTrNCud793yAmLlhIblRI2MysiBn/hniPnF4k5ZqRbwD7k1u+V34NuHwaZPUP0V2ffyTScD3vk
+4LXE2f8UP5vD5blCIqCgqUx41ySn2rpcXQSaiR5+dcWq8zLB9mFGH33OZUJgOtCVH0EG8qgmq88i
+l1OjXVJaU4AVL15O3iGy3QU55kZ9r1FHe0M77g==
+</ds:SignatureValue>
+<ds:KeyInfo Id="Certificate11042981">
+<ds:X509Data>
+<ds:X509Certificate>
+MIIKxjCCCK6gAwIBAgIINBMk4k5tjF8wDQYJKoZIhvcNAQELBQAwgZkxCzAJBgNVBAYTAkVDMR0w
+GwYDVQQKDBRTRUNVUklUWSBEQVRBIFMuQS4gMjEwMC4GA1UECwwnRU5USURBRCBERSBDRVJUSUZJ
+Q0FDSU9OIERFIElORk9STUFDSU9OMTkwNwYDVQQDDDBBVVRPUklEQUQgREUgQ0VSVElGSUNBQ0lP
+TiBTVUJDQS0yIFNFQ1VSSVRZIERBVEEwHhcNMjUwODI1MjAwNzI0WhcNMjcwODI1MjAwNzI0WjCB
+rzEtMCsGA1UEAwwkTUFSSUJFTCBERUwgQ0FSTUVOIE1BQ0hVQ0EgQ09OVFJFUkFTMSAwHgYDVQQF
+ExcwMTA0MjYwMDA1LTI1MDgyNTE1MTcxNDEwMC4GA1UECwwnRU5USURBRCBERSBDRVJUSUZJQ0FD
+SU9OIERFIElORk9STUFDSU9OMR0wGwYDVQQKDBRTRUNVUklUWSBEQVRBIFMuQS4gMjELMAkGA1UE
+BhMCRUMwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDKZf7O2BbltZJL+m07TmjqWWNG
+4O9C3/3NusF1vazjRQBrRSfN8Gp2QT4PpDdWpQEVCGn5LGWglvKDlnbkak7AC7sgcS//vSUNhXpm
+2Zk3Oyo6XFmH/u6CrdGtuTOBla74ZnIUd3fSqfbnkqjY7zjFR0xr/3r66tKB8T/6s8meu/2q7XcN
+as/maC/o9C1b8LRgPVW8SN/4KWLR/KP4wspVtf/PmJpeem/HSlz4kJfTYKOQAbyP/denM0usVsxF
+fhSM72z0oZNp3M6h4O4PT5vE8KQ2M64eDw2xYxnIhI7W1r9OVR2dzc959qRIWKjpVihpymNJWW2D
+nrr99gL/SFqLAgMBAAGjggX4MIIF9DAMBgNVHRMBAf8EAjAAMB8GA1UdIwQYMBaAFIy6yhFXeCWA
+HWsKS1W/ja5i3b2PMFkGCCsGAQUFBwEBBE0wSzBJBggrBgEFBQcwAYY9aHR0cDovL29jc3Bndy5z
+ZWN1cml0eWRhdGEubmV0LmVjL2VqYmNhL3B1YmxpY3dlYi9zdGF0dXMvb2NzcDAhBgNVHREEGjAY
+gRZtYXJ5bWFjaHVjYWNAZ21haWwuY29tMIIBFQYDVR0gBIIBDDCCAQgwYgYKKwYBBAGCpnICCTBU
+MFIGCCsGAQUFBwICMEYeRABDAGUAcgB0AGkAZgBpAGMAYQBkAG8AIABkAGUAIABSAGUAcAByAGUA
+cwBlAG4AdABhAG4AdABlACAATABlAGcAYQBsMIGhBgorBgEEAYKmcgIDMIGSMIGPBggrBgEFBQcC
+ARaBgmh0dHBzOi8vd3d3LnNlY3VyaXR5ZGF0YS5uZXQuZWMvd3AtY29udGVudC9kb3dubG9hZHMv
+Tm9ybWF0aXZhcy9QX2RlX0NlcnRpZmljYWRvcy9Qb2xpdGljYXMgZGUgQ2VydGlmaWNhZG8gUmVw
+cmVzZW50YW50ZSBMZWdhbC5wZGYwHQYDVR0lBBYwFAYIKwYBBQUHAwIGCCsGAQUFBwMEMIICDwYD
+VR0fBIICBjCCAgIwgd6gOqA4hjZodHRwOi8vY3JsMS5zZWN1cml0eWRhdGEubmV0LmVjL3N1YmNh
+MmNybDEvY3JsZmlsZS5jcmyigZ+kgZwwgZkxOTA3BgNVBAMMMEFVVE9SSURBRCBERSBDRVJUSUZJ
+Q0FDSU9OIFNVQkNBLTIgU0VDVVJJVFkgREFUQTEwMC4GA1UECwwnRU5USURBRCBERSBDRVJUSUZJ
+Q0FDSU9OIERFIElORk9STUFDSU9OMR0wGwYDVQQKDBRTRUNVUklUWSBEQVRBIFMuQS4gMjELMAkG
+A1UEBhMCRUMwPKA6oDiGNmh0dHA6Ly9jcmwyLnNlY3VyaXR5ZGF0YS5uZXQuZWMvc3ViY2EyY3Js
+Mi9jcmxmaWxlLmNybDCB4KCB3aCB2oaB12h0dHBzOi8vcG9ydGFsLW9wZXJhZG9yMi5zZWN1cml0
+eWRhdGEubmV0LmVjL2VqYmNhL3B1YmxpY3dlYi93ZWJkaXN0L2NlcnRkaXN0P2NtZD1jcmwmaXNz
+dWVyPUNOPUFVVE9SSURBRCBERSBDRVJUSUZJQ0FDSU9OIFNVQkNBLTIgU0VDVVJJVFkgREFUQSxP
+VT1FTlRJREFEIERFIENFUlRJRklDQUNJT04gREUgSU5GT1JNQUNJT04sTz1TRUNVUklUWSBEQVRB
+IFMuQS4gMixDPUVDMB0GA1UdDgQWBBTm360Ikopl/pMlD5dqbQCrxaGMcjArBgNVHRAEJDAigA8y
+MDI1MDgyNTIwMDcyNFqBDzIwMjcwODI1MjAwNzI0WjALBgNVHQ8EBAMCBeAwFwYKKwYBBAGCpnID
+BQQJDAdHRVJFTlRFMBoGCisGAQQBgqZyAwEEDAwKMDEwNDI2MDAwNTAXBgorBgEEAYKmcgMJBAkM
+B0NIT05HT04wEQYKKwYBBAGCpnIDIgQDDAEuMC0GCisGAQQBgqZyAwcEHwwdS00gMzUgVklBIEEg
+TEEgQ09TVEEgUyBOIFkgU04wIgYKKwYBBAGCpnIDAgQUDBJNQVJJQkVMIERFTCBDQVJNRU4wEAYK
+KwYBBAGCpnIDIAQCDAAwEwYKKwYBBAGCpnIDIQQFDANQRlgwFwYKKwYBBAGCpnIDDAQJDAdFQ1VB
+RE9SMBcGCisGAQQBgqZyAwMECQwHTUFDSFVDQTArBgorBgEEAYKmcgMKBB0MG0FHUklDT0xBIENB
+RFVMQUdSTyBDSUEgTFREQTAdBgorBgEEAYKmcgMLBA8MDTAxOTA0MTkzOTgwMDEwEQYKKwYBBAGC
+pnIDHQQDDAEuMBkGCisGAQQBgqZyAwQECwwJQ09OVFJFUkFTMBoGCisGAQQBgqZyAwgEDAwKMDk3
+OTg0Njg2NTANBgkqhkiG9w0BAQsFAAOCAgEArn1Te6xsLOMnPd+3aAiSzVysg/xU+zdDQdwfCVp/
+bldHjfrdrCz3piyb46kuP8w/syEetF7wS6MK/GQRLDNIY/wkNYhxUuOdlGUhyr6UC7AIsP4cmIyF
+qRxMj04L/cmEOgVY/e8WLCBI5qd8jzUlU4ah8Q+3WEHsPYPLWEBEcfpFzRlY90YU5uD69NBRfMwB
+CkbbtHNIBA0CMNS6j/a1lZ+tBpSyQXjh8x3D8DrR+5A0O3KDmtTJYdVaGrDNgZOlZ4wcuaUL4Efn
+5N4UqM5NEnZFG8bNnBN/BTcZdJQMK6nyxZdNEnqPawN7ybZRbR3pdsK6qSstlb/0t5t1wfyHFs+1
+FP4DWy08CGw3JoCprTwjAD6Kwmmzuk1mC98YnMDQ9SVsteqNJJAKKtNfnmpPwvQ/dp+VS0hVQMEh
+TIE3FD0AgVsEE0n7dHaTYNm5wqB3T880RzjZleXodqWW7Tf594ByrfgO63gdPPRxCIuL6QVhWmvm
+WoGC6t5F5danagLJX2gwzk2v99GdfHO0+S1A9qW+01pb+M37hby/8gZVSb1zRnT3tSqTUtqer5oR
+FPXv+J77AH3a30+ZM8Q6NnjfcizP8LpQn2mnb+s+6OALPeYtbGcPjQtPLgPRDXVikiurRKvcEWD+
+z7AOaBWGIaTVk9eOvFKs1ZRzbIHVBIAWySA=
+</ds:X509Certificate>
+</ds:X509Data>
+<ds:KeyValue>
+<ds:RSAKeyValue>
+<ds:Modulus>
+ymX+ztgW5bWSS/ptO05o6lljRuDvQt/9zbrBdb2s40UAa0UnzfBqdkE+D6Q3VqUBFQhp+SxloJby
+g5Z25GpOwAu7IHEv/70lDYV6ZtmZNzsqOlxZh/7ugq3RrbkzgZWu+GZyFHd30qn255Ko2O84xUdM
+a/96+urSgfE/+rPJnrv9qu13DWrP5mgv6PQtW/C0YD1VvEjf+Cli0fyj+MLKVbX/z5iaXnpvx0pc
++JCX02CjkAG8j/3XpzNLrFbMRX4UjO9s9KGTadzOoeDuD0+bxPCkNjOuHg8NsWMZyISO1ta/TlUd
+nc3PefakSFio6VYoacpjSVltg566/fYC/0haiw==
+</ds:Modulus>
+<ds:Exponent>AQAB</ds:Exponent>
+</ds:RSAKeyValue>
+</ds:KeyValue>
+</ds:KeyInfo>
+<ds:Object Id="Signature674609-Object765768"><etsi:QualifyingProperties Target="#Signature674609"><etsi:SignedProperties Id="Signature674609-SignedProperties739648"><etsi:SignedSignatureProperties><etsi:SigningTime>2026-08-05T14:37:44+00:00</etsi:SigningTime><etsi:SigningCertificate><etsi:Cert><etsi:CertDigest><ds:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/><ds:DigestValue>qMMcbtYalToKUSzyfzxhbw2YYo0=</ds:DigestValue></etsi:CertDigest><etsi:IssuerSerial><ds:X509IssuerName>CN=AUTORIDAD DE CERTIFICACION SUBCA-2 SECURITY DATA,OU=ENTIDAD DE CERTIFICACION DE INFORMACION,O=SECURITY DATA S.A. 2,C=EC</ds:X509IssuerName><ds:X509SerialNumber>3752383468926766175</ds:X509SerialNumber></etsi:IssuerSerial></etsi:Cert></etsi:SigningCertificate></etsi:SignedSignatureProperties><etsi:SignedDataObjectProperties><etsi:DataObjectFormat ObjectReference="#Reference-ID-138176"><etsi:Description>contenido comprobante</etsi:Description><etsi:MimeType>text/xml</etsi:MimeType></etsi:DataObjectFormat></etsi:SignedDataObjectProperties></etsi:SignedProperties></etsi:QualifyingProperties></ds:Object></ds:Signature></comprobanteRetencion>]]></comprobante>
+<mensajes/>
+</autorizacion>
+

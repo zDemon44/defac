@@ -94,3 +94,7 @@ npm.cmd run check:db
 La base se llama `defac-base`. El script crea empresas, lotes de compras/ventas, facturas, impuestos, detalles, formas de pago y trazabilidad del procesamiento.
 
 Este proyecto no automatiza el portal del SRI, CAPTCHA ni autenticación interactiva.
+
+# DEFAC v3: retenciones de ventas
+
+Antes de usar **Ventas → Retenciones**, ejecute `retenciones-nueva-tablas.sql` en MySQL Workbench. El importador consulta las claves del TXT mediante el SOAP del SRI y solo guarda comprobantes autorizados cuyo `codDocSustento` sea `01` y cuyo `numDocSustento` identifique una factura. Admite una o varias líneas de retención de renta e IVA y evita duplicados por empresa y clave de acceso.

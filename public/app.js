@@ -8,6 +8,8 @@ const state = {
   salesBatchId: null,
   salesRows: [],
   savedSales: [],
+  withholdings: [],
+  savedPages: { purchase: 1, sales: 1, withholding: 1 },
 };
 const $ = (selector) => document.querySelector(selector);
 const months = [
@@ -46,7 +48,7 @@ async function initialize() {
     .closest(".form-grid")
     .insertAdjacentHTML(
       "beforeend",
-      '<label class="hidden" id="pointDocSourceField"><span>Fuente de Punto Doc</span><select id="pointDocSource"><option value="EXCEL">Excel de emitidos</option><option value="XML">XML directos</option></select></label>',
+      '<label id="sriSourceField"><span>Fuente del Facturador SRI</span><select id="sriSource"><option value="TXT">TXT para consultar al SRI</option><option value="XML">XML directos</option></select></label><label class="hidden" id="pointDocSourceField"><span>Fuente de Punto Doc</span><select id="pointDocSource"><option value="EXCEL">Excel de emitidos</option><option value="XML">XML directos</option></select></label>',
     );
   $("#reportYear").innerHTML = Array.from(
     { length: 7 },
@@ -109,6 +111,7 @@ function updateSelectedCompany() {
     loadCompanySummary(company.id);
     loadSavedPurchases();
     loadSavedSales();
+    loadWithholdings();
   } else {
     $("#purchaseCount").textContent = "0 facturas guardadas";
     $("#saleCount").textContent = "0 facturas guardadas";
@@ -143,7 +146,19 @@ async function loadSavedSales() {
     toast(err.message);
   }
 }
+async function loadWithholdings() {
+  const id = Number($("#companySelect").value);
+  if (!id) return;
+  try {
+    const data = await api(`/api/companies/${id}/withholdings`);
+    state.withholdings = data.withholdings;
+    renderWithholdings();
+  } catch (err) {
+    toast(err.message);
+  }
+}
 $("#companySelect").addEventListener("change", async (e) => {
+  clearPendingFiles();
   updateSelectedCompany();
   const id = Number(e.target.value);
   if (!id) return;
@@ -154,6 +169,26 @@ $("#companySelect").addEventListener("change", async (e) => {
     toast(err.message);
   }
 });
+function clearPendingFiles() {
+  for (const id of [
+    "txtFile",
+    "purchaseXmlFiles",
+    "salesTxtFile",
+    "salesXmlFiles",
+    "withholdingTxt",
+    "xmlFiles",
+  ]) {
+    const input = $("#" + id);
+    if (input) input.value = "";
+  }
+  $("#txtLabel").textContent = "Seleccionar archivo del SRI";
+  $("#purchaseXmlLabel").textContent = "Seleccionar XML de compras";
+  configureSalesImport();
+  const withholdingXml = $("#withholdingImportMethod").value === "XML";
+  $("#withholdingTxtLabel").textContent = withholdingXml
+    ? "Seleccionar XML de retenciones"
+    : "Seleccionar TXT de retenciones";
+}
 $("#newCompanyButton").addEventListener("click", () => openCompanyDialog());
 $("#editCompanyButton").addEventListener("click", () =>
   openCompanyDialog(
@@ -210,6 +245,11 @@ $("#txtFile").addEventListener("change", (e) => {
   $("#txtLabel").textContent =
     e.target.files[0]?.name || "Seleccionar archivo del SRI";
 });
+$("#purchaseImportMethod").addEventListener("change", (e) => {
+  const directXml = e.target.value === "XML";
+  $("#batchForm").classList.toggle("hidden", directXml);
+  $("#purchaseXmlForm").classList.toggle("hidden", !directXml);
+});
 $("#batchForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const button = e.submitter;
@@ -231,15 +271,46 @@ $("#batchForm").addEventListener("submit", async (e) => {
     };
     $("#workspace").classList.remove("hidden");
     render();
-    toast(`${data.total} nuevas; ${data.omitted || 0} existentes omitidas.`);
+    toast(`${data.total} nuevas; consultando automáticamente al SRI…`);
+    busy(button, true, "Consultando SRI");
+    await processPurchaseBatch();
   } catch (err) {
     toast(err.message);
   } finally {
     busy(button, false, "Importar lote");
   }
 });
-$("#processButton").addEventListener("click", async (e) => {
-  busy(e.currentTarget, true, "Consultando SRI");
+$("#purchaseXmlFiles").addEventListener("change", (e) => {
+  const count = e.target.files.length;
+  $("#purchaseXmlLabel").textContent = count
+    ? `${count} XML seleccionado${count === 1 ? "" : "s"}`
+    : "Seleccionar XML de compras";
+});
+$("#purchaseXmlForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const companyId = Number($("#companySelect").value);
+  if (!companyId) return toast("Selecciona primero una empresa.");
+  const button = e.submitter;
+  busy(button, true, "Importando XML");
+  try {
+    const data = await api(`/api/companies/${companyId}/purchases/direct-xml`, {
+      method: "POST",
+      body: new FormData(e.currentTarget),
+    });
+    await Promise.all([loadSavedPurchases(), loadCompanySummary(companyId)]);
+    toast(
+      `${data.accepted} compras guardadas; ${data.omitted} duplicadas omitidas; ${data.rejected.length} rechazadas.`,
+    );
+    if (data.rejected.length) console.warn(data.rejected);
+    e.currentTarget.reset();
+    $("#purchaseXmlLabel").textContent = "Seleccionar XML de compras";
+  } catch (err) {
+    toast(err.message);
+  } finally {
+    busy(button, false, "Importar XML");
+  }
+});
+async function processPurchaseBatch() {
   $("#processHint").textContent =
     "Procesando el lote con concurrencia controlada…";
   try {
@@ -250,16 +321,16 @@ $("#processButton").addEventListener("click", async (e) => {
     state.summary = data.summary;
     enableExports();
     render();
+    const companyId = Number($("#companySelect").value);
+    await Promise.all([loadSavedPurchases(), loadCompanySummary(companyId)]);
     toast(`Proceso terminado: ${data.summary.downloaded} descargadas.`);
     $("#processHint").textContent =
       "Proceso terminado. Carga los XML que continúan pendientes o genera el Excel disponible.";
   } catch (err) {
     toast(err.message);
     $("#processHint").textContent = "No se pudo completar el proceso.";
-  } finally {
-    busy(e.currentTarget, false, "Consultar nuevamente");
   }
-});
+}
 $("#xmlFiles").addEventListener("change", async (e) => {
   if (!e.target.files.length) return;
   const form = new FormData();
@@ -294,14 +365,18 @@ $("#salesTxtFile").addEventListener("change", (e) => {
     e.target.files[0]?.name || "Seleccionar TXT de ventas";
 });
 $("#salesMethod").addEventListener("change", configureSalesImport);
+$("#sriSource").addEventListener("change", configureSalesImport);
 $("#pointDocSource").addEventListener("change", configureSalesImport);
 function configureSalesImport() {
   const method = $("#salesMethod").value;
+  const sri = method === "SRI";
   const pointDoc = method === "PUNTO_DOC";
   const contifico = method === "CONTIFICO";
+  const sriXml = sri && $("#sriSource").value === "XML";
   const pointXml = pointDoc && $("#pointDocSource").value === "XML";
-  const directXml = method === "SECURITY_DATA" || pointXml;
+  const directXml = method === "SECURITY_DATA" || sriXml || pointXml;
   const excel = (pointDoc && !pointXml) || contifico;
+  $("#sriSourceField").classList.toggle("hidden", !sri);
   $("#pointDocSourceField").classList.toggle("hidden", !pointDoc);
   const input = $("#salesTxtFile");
   input.value = "";
@@ -312,7 +387,12 @@ function configureSalesImport() {
       ? ".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
       : ".txt,.tsv,text/plain";
   $("#salesFileIcon").textContent = directXml ? "XML" : excel ? "EXCEL" : "TXT";
-  const provider = method === "SECURITY_DATA" ? "Security Data" : "Punto Doc";
+  const provider =
+    method === "SRI"
+      ? "Facturador SRI"
+      : method === "SECURITY_DATA"
+        ? "Security Data"
+        : "Punto Doc";
   $("#salesTxtLabel").textContent = directXml
     ? `Seleccionar XML de ${provider}`
     : excel
@@ -335,10 +415,12 @@ $("#salesBatchForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const button = e.submitter;
   const method = $("#salesMethod").value;
+  const sri = method === "SRI";
   const pointDoc = method === "PUNTO_DOC";
   const contifico = method === "CONTIFICO";
+  const sriXml = sri && $("#sriSource").value === "XML";
   const pointXml = pointDoc && $("#pointDocSource").value === "XML";
-  const directXml = method === "SECURITY_DATA" || pointXml;
+  const directXml = method === "SECURITY_DATA" || sriXml || pointXml;
   const excel = (pointDoc && !pointXml) || contifico;
   busy(button, true, "Importando");
   try {
@@ -347,7 +429,10 @@ $("#salesBatchForm").addEventListener("submit", async (e) => {
       const source = new FormData(e.currentTarget);
       const form = new FormData();
       form.set("companyId", source.get("companyId"));
-      form.set("provider", pointDoc ? "PUNTO_DOC" : "SECURITY_DATA");
+      form.set(
+        "provider",
+        sri ? "SRI" : pointDoc ? "PUNTO_DOC" : "SECURITY_DATA",
+      );
       for (const file of $("#salesTxtFile").files) form.append("xmls", file);
       data = await api("/api/sales/direct-xml", { method: "POST", body: form });
       toast(
@@ -377,7 +462,9 @@ $("#salesBatchForm").addEventListener("submit", async (e) => {
       state.salesRows = data.rows;
       $("#salesWorkspace").classList.remove("hidden");
       renderSalesProcess();
-      toast(`${data.total} ventas nuevas; ${data.omitted || 0} omitidas.`);
+      toast(`${data.total} ventas nuevas; consultando automáticamente al SRI…`);
+      busy(button, true, "Consultando SRI");
+      await processSalesBatch();
       return;
     }
     await loadSavedSales();
@@ -393,8 +480,7 @@ $("#salesBatchForm").addEventListener("submit", async (e) => {
     );
   }
 });
-$("#salesProcessButton").addEventListener("click", async (e) => {
-  busy(e.currentTarget, true, "Consultando");
+async function processSalesBatch() {
   try {
     const data = await api(`/api/batches/${state.salesBatchId}/process`, {
       method: "POST",
@@ -408,10 +494,8 @@ $("#salesProcessButton").addEventListener("click", async (e) => {
     toast(`${data.summary.downloaded} ventas descargadas.`);
   } catch (err) {
     toast(err.message);
-  } finally {
-    busy(e.currentTarget, false, "Consultar nuevamente");
   }
-});
+}
 $("#salesXmlFiles").addEventListener("change", async (e) => {
   if (!e.target.files.length) return;
   const form = new FormData();
@@ -423,7 +507,8 @@ $("#salesXmlFiles").addEventListener("change", async (e) => {
     });
     state.salesRows = data.result.results;
     renderSalesProcess();
-    await loadSavedSales();
+    const companyId = Number($("#companySelect").value);
+    await Promise.all([loadSavedSales(), loadCompanySummary(companyId)]);
     toast(`${data.accepted.length} XML aceptados.`);
   } catch (err) {
     toast(err.message);
@@ -431,21 +516,135 @@ $("#salesXmlFiles").addEventListener("change", async (e) => {
     e.target.value = "";
   }
 });
+$("#withholdingTxt").addEventListener("change", (e) => {
+  const directXml = $("#withholdingImportMethod").value === "XML";
+  const count = e.target.files.length;
+  $("#withholdingTxtLabel").textContent = count
+    ? directXml
+      ? `${count} XML seleccionado${count === 1 ? "" : "s"}`
+      : e.target.files[0].name
+    : directXml
+      ? "Seleccionar XML de retenciones"
+      : "Seleccionar TXT de retenciones";
+});
+$("#withholdingImportMethod").addEventListener("change", (e) => {
+  const directXml = e.target.value === "XML";
+  const input = $("#withholdingTxt");
+  input.value = "";
+  input.multiple = directXml;
+  input.accept = directXml
+    ? ".xml,text/xml,application/xml"
+    : ".txt,.tsv,text/plain";
+  $("#withholdingFileIcon").textContent = directXml ? "XML" : "TXT";
+  $("#withholdingTxtLabel").textContent = directXml
+    ? "Seleccionar XML de retenciones"
+    : "Seleccionar TXT de retenciones";
+  $("#withholdingFileHint").textContent = directXml
+    ? "Puedes seleccionar varios comprobantes autorizados"
+    : "Debe contener la columna CLAVE_ACCESO";
+  $("#withholdingForm button").textContent = directXml
+    ? "Importar XML"
+    : "Consultar e importar";
+});
+$("#withholdingForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const button = e.submitter;
+  const companyId = Number($("#companySelect").value);
+  const directXml = $("#withholdingImportMethod").value === "XML";
+  busy(button, true, directXml ? "Importando XML" : "Consultando SRI");
+  try {
+    let body = new FormData(e.currentTarget);
+    if (directXml) {
+      body = new FormData();
+      for (const file of $("#withholdingTxt").files) body.append("xmls", file);
+    }
+    const data = await api(
+      `/api/companies/${companyId}/withholdings/${directXml ? "direct-xml" : "import"}`,
+      { method: "POST", body },
+    );
+    $("#withholdingSummary").classList.remove("hidden");
+    $("#withholdingSummary").innerHTML = [
+      ["Procesadas", data.results.length + data.omitted],
+      ["Guardadas", data.accepted],
+      ["Existentes", data.omitted],
+      ["Rechazadas", data.rejected.length],
+    ]
+      .map(
+        ([label, value]) =>
+          `<div class="stat"><small>${label}</small><strong>${value}</strong></div>`,
+      )
+      .join("");
+    $("#withholdingResultsWrap").classList.remove("hidden");
+    $("#withholdingResultsBody").innerHTML = data.results
+      .map(
+        (item) =>
+          `<tr><td class="key">${esc(item.key)}</td><td><span class="badge ${item.status === "GUARDADA" ? "success" : "error"}">${esc(item.status)}</span></td><td>${esc((item.invoices || []).join(", ") || "—")}</td><td>${esc(item.message || `Renta ${money(item.incomeTaxWithheld)} · IVA ${money(item.vatWithheld)}`)}</td></tr>`,
+      )
+      .join("");
+    await loadWithholdings();
+    toast(
+      `${data.accepted} retenciones guardadas; ${data.rejected.length} rechazadas.`,
+    );
+    e.currentTarget.reset();
+    $("#withholdingTxtLabel").textContent = directXml
+      ? "Seleccionar XML de retenciones"
+      : "Seleccionar TXT de retenciones";
+  } catch (err) {
+    toast(err.message);
+  } finally {
+    busy(button, false, directXml ? "Importar XML" : "Consultar e importar");
+  }
+});
 document.querySelectorAll("[data-sales-view]").forEach((button) =>
   button.addEventListener("click", () => {
     document
       .querySelectorAll("[data-sales-view]")
       .forEach((item) => item.classList.toggle("active", item === button));
-    const saved = button.dataset.salesView === "saved";
-    $("#savedSalesView").classList.toggle("hidden", !saved);
-    $("#importSalesView").classList.toggle("hidden", saved);
-    if (saved) loadSavedSales();
+    const view = button.dataset.salesView;
+    $("#savedSalesView").classList.toggle("hidden", view !== "saved");
+    $("#importSalesView").classList.toggle("hidden", view !== "import");
+    $("#savedWithholdingsView").classList.toggle(
+      "hidden",
+      view !== "withholdings",
+    );
+    $("#importWithholdingsView").classList.toggle(
+      "hidden",
+      view !== "import-withholdings",
+    );
+    if (view === "saved") loadSavedSales();
+    if (view === "withholdings") loadWithholdings();
   }),
 );
 $("#search").addEventListener("input", renderTable);
 $("#statusFilter").addEventListener("change", renderTable);
-$("#savedSearch").addEventListener("input", renderSavedPurchases);
-$("#salesSearch").addEventListener("input", renderSavedSales);
+[
+  ["purchase", "savedSearch", renderSavedPurchases],
+  ["sales", "salesSearch", renderSavedSales],
+  ["withholding", "withholdingSearch", renderWithholdings],
+].forEach(([prefix, searchId, render]) => {
+  $("#" + searchId).addEventListener("input", () => {
+    state.savedPages[prefix] = 1;
+    render();
+  });
+  for (const suffix of ["From", "To", "Limit"]) {
+    const element = $("#" + prefix + suffix);
+    element.addEventListener(
+      element.tagName === "SELECT" ? "change" : "input",
+      () => {
+        state.savedPages[prefix] = 1;
+        render();
+      },
+    );
+  }
+  $("#" + prefix + "Prev").addEventListener("click", () => {
+    state.savedPages[prefix]--;
+    render();
+  });
+  $("#" + prefix + "Next").addEventListener("click", () => {
+    state.savedPages[prefix]++;
+    render();
+  });
+});
 document.querySelectorAll("[data-purchase-view]").forEach((button) =>
   button.addEventListener("click", () => {
     document
@@ -544,12 +743,15 @@ function renderTable() {
 }
 function renderSavedPurchases() {
   const q = $("#savedSearch").value.toLowerCase();
-  const rows = state.savedPurchases.filter(
-    (r) =>
-      !q ||
-      `${r.documentNumber} ${r.issuerTaxId} ${r.issuerBusinessName}`
-        .toLowerCase()
-        .includes(q),
+  const rows = filterSavedRows(
+    state.savedPurchases.filter(
+      (r) =>
+        !q ||
+        `${r.documentNumber} ${r.issuerTaxId} ${r.issuerBusinessName}`
+          .toLowerCase()
+          .includes(q),
+    ),
+    "purchase",
   );
   $("#savedEmpty").style.display = rows.length ? "none" : "block";
   $("#savedPurchasesBody").innerHTML = rows
@@ -561,20 +763,77 @@ function renderSavedPurchases() {
 }
 function renderSavedSales() {
   const q = $("#salesSearch").value.toLowerCase();
-  const rows = state.savedSales.filter(
-    (r) =>
-      !q ||
-      `${r.documentNumber} ${r.issuerTaxId} ${r.issuerBusinessName}`
-        .toLowerCase()
-        .includes(q),
+  const rows = filterSavedRows(
+    state.savedSales.filter(
+      (r) =>
+        !q ||
+        `${r.documentNumber} ${r.issuerTaxId} ${r.issuerBusinessName}`
+          .toLowerCase()
+          .includes(q),
+    ),
+    "sales",
   );
   $("#salesEmpty").style.display = rows.length ? "none" : "block";
   $("#savedSalesBody").innerHTML = rows
     .map(
       (r) =>
-        `<tr><td>${esc(r.issueDate)}</td><td><strong>${esc(r.documentNumber)}</strong></td><td class="key">${esc(r.issuerTaxId)}</td><td>${esc(r.issuerBusinessName)}</td><td class="money">${money(r.subtotal)}</td><td class="money">${money(r.vatTotal)}</td><td class="money"><strong>${money(r.total)}</strong></td></tr>`,
+        `<tr><td>${esc(r.issueDate)}</td><td><strong>${esc(r.documentNumber)}</strong></td><td class="key">${esc(r.issuerTaxId)}</td><td>${esc(r.issuerBusinessName)}</td><td class="money">${money(r.subtotal)}</td><td class="money">${money(r.vatTotal)}</td><td class="money"><strong>${money(r.total)}</strong></td><td class="money">${r.incomeTaxWithheld == null ? "" : money(r.incomeTaxWithheld)}</td><td class="money">${r.vatWithheld == null ? "" : money(r.vatWithheld)}</td></tr>`,
     )
     .join("");
+}
+function renderWithholdings() {
+  const q = $("#withholdingSearch").value.toLowerCase();
+  const rows = filterSavedRows(
+    state.withholdings.filter(
+      (r) =>
+        !q ||
+        `${r.documentNumber} ${r.issuerTaxId} ${r.issuerBusinessName} ${r.supportDocuments}`
+          .toLowerCase()
+          .includes(q),
+    ),
+    "withholding",
+  );
+  $("#withholdingsEmpty").style.display = rows.length ? "none" : "block";
+  $("#savedWithholdingsBody").innerHTML = rows
+    .map(
+      (r) =>
+        `<tr><td>${esc(r.issueDate)}</td><td><strong>${esc(r.documentNumber)}</strong></td><td><span class="key">${esc(r.issuerTaxId)}</span><br>${esc(r.issuerBusinessName)}</td><td>${esc(r.supportDocuments)}<br><small>${r.linkedDocumentCount === r.documentCount ? "Factura vinculada" : "Pendiente: factura aún no guardada"}</small></td><td class="money">${money(r.incomeTaxWithheld)}</td><td class="money">${money(r.vatWithheld)}</td><td class="money"><strong>${money(r.totalWithheld)}</strong></td><td>${r.lineCount}</td></tr>`,
+    )
+    .join("");
+}
+function filterSavedRows(rows, prefix) {
+  const from = $("#" + prefix + "From").value;
+  const to = $("#" + prefix + "To").value;
+  const filtered = rows.filter((row) => {
+    const [day, month, year] = String(row.issueDate || "").split("/");
+    const date =
+      year && month && day
+        ? `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`
+        : "";
+    return (!from || date >= from) && (!to || date <= to);
+  });
+  const limit = Number($("#" + prefix + "Limit").value);
+  const pageCount = Math.max(1, Math.ceil(filtered.length / limit));
+  const page = Math.min(Math.max(1, state.savedPages[prefix]), pageCount);
+  state.savedPages[prefix] = page;
+  const visible = filtered.slice((page - 1) * limit, page * limit);
+  $("#" + prefix + "FilterCount").textContent =
+    `Total: ${filtered.length} ${prefix === "withholding" ? "retenciones" : "facturas"}`;
+  if (prefix === "sales") {
+    const keys = new Set(
+      filtered.flatMap((row) =>
+        String(row.withholdingKeys || "")
+          .split(",")
+          .filter(Boolean),
+      ),
+    );
+    $("#salesRetentionCount").textContent =
+      `Retenciones asociadas: ${keys.size}`;
+  }
+  $("#" + prefix + "Page").textContent = `Página ${page} de ${pageCount}`;
+  $("#" + prefix + "Prev").disabled = page <= 1;
+  $("#" + prefix + "Next").disabled = page >= pageCount;
+  return visible;
 }
 function renderSalesProcess() {
   const count = (s) => state.salesRows.filter((r) => r.status === s).length;

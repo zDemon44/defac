@@ -1,6 +1,10 @@
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
-import type { PoolConnection, ResultSetHeader } from "mysql2/promise";
+import type {
+  PoolConnection,
+  ResultSetHeader,
+  RowDataPacket,
+} from "mysql2/promise";
 import type {
   BatchItemResult,
   BatchLog,
@@ -25,6 +29,227 @@ export interface StoredInvoiceRow {
   total: number;
   xmlPath: string;
   movementType: "PURCHASE" | "SALE";
+  incomeTaxWithheld?: number | null;
+  vatWithheld?: number | null;
+  withholdingKeys?: string | null;
+}
+
+export async function loadNormalizedInvoicesByAccessKeys(
+  accessKeys: string[],
+): Promise<Map<string, NormalizedInvoice>> {
+  const keys = [...new Set(accessKeys)];
+  if (!keys.length) return new Map();
+  const placeholders = keys.map(() => "?").join(",");
+  const pool = getDatabasePool();
+  const [headers] = await pool.query<
+    Array<
+      RowDataPacket & {
+        id: number;
+        type: "FACTURA";
+        version: string | null;
+        accessKey: string;
+        authorizationNumber: string | null;
+        authorizationDate: string | null;
+        issueDate: string;
+        ruc: string;
+        businessName: string;
+        recipientIdentification: string;
+        recipientBusinessName: string | null;
+        establishment: string;
+        emissionPoint: string;
+        sequential: string;
+        documentNumber: string;
+        subtotal: string | number;
+        discount: string | number;
+        tip: string | number;
+        vatTotal: string | number;
+        total: string | number;
+      }
+    >
+  >(
+    `SELECT id,document_type AS type,document_version AS version,access_key AS accessKey,authorization_number AS authorizationNumber,
+      DATE_FORMAT(authorization_date,'%Y-%m-%dT%H:%i:%s') AS authorizationDate,DATE_FORMAT(issue_date,'%d/%m/%Y') AS issueDate,
+      issuer_tax_id AS ruc,issuer_business_name AS businessName,recipient_id AS recipientIdentification,recipient_business_name AS recipientBusinessName,
+      establishment,emission_point AS emissionPoint,sequential,document_number AS documentNumber,subtotal,discount,tip,vat_total AS vatTotal,total
+     FROM invoices WHERE access_key IN (${placeholders})`,
+    keys,
+  );
+  const ids = headers.map((row) => row.id);
+  if (!ids.length) return new Map();
+  const idPlaceholders = ids.map(() => "?").join(",");
+  const [taxRows] = await pool.query<
+    Array<
+      RowDataPacket & {
+        invoiceId: number;
+        code: string;
+        percentageCode: string;
+        rate: string | number | null;
+        taxableBase: string | number;
+        value: string | number;
+      }
+    >
+  >(
+    `SELECT invoice_id AS invoiceId,tax_code AS code,percentage_code AS percentageCode,rate,taxable_base AS taxableBase,tax_value AS value FROM invoice_taxes WHERE invoice_id IN (${idPlaceholders})`,
+    ids,
+  );
+  const [detailRows] = await pool.query<
+    Array<
+      RowDataPacket & {
+        id: number;
+        invoiceId: number;
+        mainCode: string | null;
+        auxiliaryCode: string | null;
+        description: string;
+        quantity: string | number;
+        unitPrice: string | number;
+        discount: string | number;
+        totalWithoutTax: string | number;
+      }
+    >
+  >(
+    `SELECT id,invoice_id AS invoiceId,main_code AS mainCode,auxiliary_code AS auxiliaryCode,description,quantity,unit_price AS unitPrice,discount,total_without_tax AS totalWithoutTax FROM invoice_details WHERE invoice_id IN (${idPlaceholders}) ORDER BY invoice_id,line_number`,
+    ids,
+  );
+  const detailIds = detailRows.map((row) => row.id);
+  const detailTaxRows = detailIds.length
+    ? (
+        await pool.query<
+          Array<
+            RowDataPacket & {
+              detailId: number;
+              code: string;
+              percentageCode: string;
+              rate: string | number | null;
+              taxableBase: string | number;
+              value: string | number;
+            }
+          >
+        >(
+          `SELECT detail_id AS detailId,tax_code AS code,percentage_code AS percentageCode,rate,taxable_base AS taxableBase,tax_value AS value FROM detail_taxes WHERE detail_id IN (${detailIds.map(() => "?").join(",")})`,
+          detailIds,
+        )
+      )[0]
+    : [];
+  const [paymentRows] = await pool.query<
+    Array<RowDataPacket & { invoiceId: number; method: string }>
+  >(
+    `SELECT invoice_id AS invoiceId,payment_method_code AS method FROM invoice_payments WHERE invoice_id IN (${idPlaceholders}) ORDER BY id`,
+    ids,
+  );
+  const number = (value: string | number | null | undefined) =>
+    Number(value ?? 0);
+  const toTax = (row: {
+    code: string;
+    percentageCode: string;
+    rate: string | number | null;
+    taxableBase: string | number;
+    value: string | number;
+  }) => ({
+    code: row.code,
+    percentageCode: row.percentageCode,
+    ...(row.rate === null ? {} : { rate: number(row.rate) }),
+    taxableBase: number(row.taxableBase),
+    value: number(row.value),
+  });
+  const result = new Map<string, NormalizedInvoice>();
+  for (const header of headers) {
+    const taxes = taxRows
+      .filter((row) => row.invoiceId === header.id)
+      .map(toTax);
+    const vat: NormalizedInvoice["vat"] = {
+      base0: 0,
+      baseNotTaxable: 0,
+      baseExempt: 0,
+      base0Consolidated: 0,
+      base5: 0,
+      base12: 0,
+      base13: 0,
+      base14: 0,
+      base15: 0,
+      baseSpecial: 0,
+      vat5: 0,
+      vat12: 0,
+      vat13: 0,
+      vat14: 0,
+      vat15: 0,
+      vatSpecial: 0,
+    };
+    const baseKeys: Record<string, keyof typeof vat> = {
+      "0": "base0",
+      "2": "base12",
+      "3": "base14",
+      "4": "base15",
+      "5": "base5",
+      "6": "baseNotTaxable",
+      "7": "baseExempt",
+      "8": "baseSpecial",
+      "10": "base13",
+    };
+    const valueKeys: Record<string, keyof typeof vat> = {
+      "2": "vat12",
+      "3": "vat14",
+      "4": "vat15",
+      "5": "vat5",
+      "8": "vatSpecial",
+      "10": "vat13",
+    };
+    for (const tax of taxes) {
+      if (tax.code !== "2") continue;
+      const baseKey = baseKeys[tax.percentageCode];
+      const valueKey = valueKeys[tax.percentageCode];
+      if (baseKey) vat[baseKey] += tax.taxableBase;
+      if (valueKey) vat[valueKey] += tax.value;
+    }
+    vat.base0Consolidated = vat.base0 + vat.baseNotTaxable + vat.baseExempt;
+    const invoiceDetails = detailRows
+      .filter((row) => row.invoiceId === header.id)
+      .map((row) => ({
+        ...(row.mainCode ? { mainCode: row.mainCode } : {}),
+        ...(row.auxiliaryCode ? { auxiliaryCode: row.auxiliaryCode } : {}),
+        description: row.description,
+        quantity: number(row.quantity),
+        unitPrice: number(row.unitPrice),
+        discount: number(row.discount),
+        totalWithoutTax: number(row.totalWithoutTax),
+        taxes: detailTaxRows
+          .filter((tax) => tax.detailId === row.id)
+          .map(toTax),
+      }));
+    result.set(header.accessKey, {
+      type: "FACTURA",
+      version: header.version ?? "",
+      ruc: header.ruc,
+      businessName: header.businessName,
+      recipientIdentification: header.recipientIdentification ?? "",
+      ...(header.recipientBusinessName
+        ? { recipientBusinessName: header.recipientBusinessName }
+        : {}),
+      issueDate: header.issueDate,
+      accessKey: header.accessKey,
+      ...(header.authorizationNumber
+        ? { authorizationNumber: header.authorizationNumber }
+        : {}),
+      ...(header.authorizationDate
+        ? { authorizationDate: header.authorizationDate }
+        : {}),
+      establishment: header.establishment,
+      emissionPoint: header.emissionPoint,
+      sequential: header.sequential,
+      documentNumber: header.documentNumber,
+      subtotal: number(header.subtotal),
+      discount: number(header.discount),
+      tip: number(header.tip),
+      total: number(header.total),
+      vatTotal: number(header.vatTotal),
+      taxes,
+      vat,
+      paymentMethods: paymentRows
+        .filter((row) => row.invoiceId === header.id)
+        .map((row) => row.method),
+      details: invoiceDetails,
+    });
+  }
+  return result;
 }
 
 export async function findExistingPurchaseKeys(
@@ -86,7 +311,19 @@ export async function listStoredSales(
   const [rows] = await getDatabasePool().query<
     Array<StoredInvoiceRow & import("mysql2/promise").RowDataPacket>
   >(
-    `SELECT id,access_key AS accessKey,document_number AS documentNumber,DATE_FORMAT(issue_date,'%d/%m/%Y') AS issueDate,'SALE' AS movementType,recipient_id AS issuerTaxId,recipient_business_name AS issuerBusinessName,subtotal,vat_total AS vatTotal,total,xml_path AS xmlPath FROM invoices WHERE company_id=? AND movement_type='SALE' ORDER BY issue_date DESC,id DESC LIMIT 2000`,
+    `SELECT i.id,i.access_key AS accessKey,i.document_number AS documentNumber,DATE_FORMAT(i.issue_date,'%d/%m/%Y') AS issueDate,'SALE' AS movementType,i.recipient_id AS issuerTaxId,i.recipient_business_name AS issuerBusinessName,i.subtotal,i.vat_total AS vatTotal,i.total,i.xml_path AS xmlPath,rt.incomeTaxWithheld,rt.vatWithheld,rt.withholdingKeys
+     FROM invoices i
+     LEFT JOIN (
+       SELECT w.company_id,d.support_document_number,
+         SUM(CASE WHEN l.tax_type='INCOME_TAX' THEN l.withheld_value ELSE 0 END) AS incomeTaxWithheld,
+         SUM(CASE WHEN l.tax_type='VAT' THEN l.withheld_value ELSE 0 END) AS vatWithheld,
+         GROUP_CONCAT(DISTINCT w.access_key ORDER BY w.access_key SEPARATOR ',') AS withholdingKeys
+       FROM withholdings w
+       JOIN withholding_documents d ON d.withholding_id=w.id
+       JOIN withholding_lines l ON l.withholding_document_id=d.id
+       GROUP BY w.company_id,d.support_document_number
+     ) rt ON rt.company_id=i.company_id AND REPLACE(rt.support_document_number,'-','')=REPLACE(i.document_number,'-','')
+     WHERE i.company_id=? AND i.movement_type='SALE' ORDER BY i.issue_date DESC,i.id DESC LIMIT 2000`,
     [companyId],
   );
   return rows;
@@ -246,6 +483,10 @@ export async function savePointDocExcelSales(
         ],
       );
       const invoiceId = result.insertId;
+      await connection.execute(
+        "UPDATE withholding_documents SET invoice_id=? WHERE invoice_id IS NULL AND REPLACE(support_document_number,'-','')=? AND withholding_id IN (SELECT id FROM withholdings WHERE company_id=?)",
+        [invoiceId, row.documentNumber.replace(/-/g, ""), companyId],
+      );
       const taxes = [
         { code: "5", rate: 5, base: row.subtotal5, value: row.vat5 },
         { code: "2", rate: 12, base: row.subtotal12, value: row.vat12 },
@@ -408,6 +649,11 @@ async function upsertInvoice(
   const invoiceId = ids[0]?.id;
   if (!invoiceId)
     throw new Error("No fue posible recuperar la factura guardada.");
+  if (movement === "SALE")
+    await connection.execute(
+      "UPDATE withholding_documents SET invoice_id=? WHERE invoice_id IS NULL AND REPLACE(support_document_number,'-','')=? AND withholding_id IN (SELECT id FROM withholdings WHERE company_id=?)",
+      [invoiceId, invoice.documentNumber.replace(/-/g, ""), companyId],
+    );
   await connection.execute("DELETE FROM invoice_taxes WHERE invoice_id = ?", [
     invoiceId,
   ]);

@@ -1,7 +1,6 @@
-import { readFile } from "node:fs/promises";
 import type { BatchItemResult } from "../../models/batchProcess.js";
 import type { NormalizedInvoice } from "../../models/invoice.js";
-import { parseInvoiceXml } from "../../parsers/xml/factura.parser.js";
+import { loadNormalizedInvoicesByAccessKeys } from "../../database/invoice.repository.js";
 
 export interface ExcelExportData {
   metadata: {
@@ -15,6 +14,8 @@ export interface ExcelExportData {
     invoice: NormalizedInvoice;
     process: BatchItemResult;
     movementType?: "PURCHASE" | "SALE";
+    incomeTaxWithheld?: number;
+    vatWithheld?: number;
   }>;
 }
 
@@ -23,19 +24,14 @@ export async function collectExcelData(
   metadata: ExcelExportData["metadata"],
 ): Promise<ExcelExportData> {
   const invoices: ExcelExportData["invoices"] = [];
-  for (const process of results.filter((item) => item.xmlPath)) {
-    if (!process.xmlPath) continue;
-    const contents = await readFile(process.xmlPath, "utf8");
-    const invoice = process.xmlPath.toLowerCase().endsWith(".json")
-      ? (JSON.parse(contents) as NormalizedInvoice)
-      : parseInvoiceXml(contents);
-    if (invoice.accessKey !== process.accessKey)
-      throw new Error(
-        `La clave interna no coincide en ${process.documentNumber}.`,
-      );
-    invoices.push({ invoice, process });
+  const stored = await loadNormalizedInvoicesByAccessKeys(
+    results.map((item) => item.accessKey),
+  );
+  for (const process of results) {
+    const invoice = stored.get(process.accessKey);
+    if (invoice) invoices.push({ invoice, process });
   }
   if (!invoices.length)
-    throw new Error("No hay XML validados para generar el Excel.");
+    throw new Error("No hay comprobantes guardados para generar el Excel.");
   return { metadata, invoices };
 }

@@ -100,11 +100,26 @@
               <span class="step">C</span>
               <h2>Compras guardadas</h2>
             </div>
-            <input
-              id="savedSearch"
-              type="search"
-              placeholder="Buscar factura, RUC o proveedor"
-            />
+            <div class="saved-filters">
+              <input
+                id="savedSearch"
+                type="search"
+                placeholder="Buscar factura, RUC o proveedor"
+              /><label
+                ><span>Desde</span
+                ><input id="purchaseFrom" type="date" /></label
+              ><label
+                ><span>Hasta</span><input id="purchaseTo" type="date" /></label
+              ><label
+                ><span>Mostrar</span
+                ><select id="purchaseLimit">
+                  <option>25</option>
+                  <option selected>50</option>
+                  <option>100</option>
+                  <option>250</option>
+                </select></label
+              ><small id="purchaseFilterCount"></small>
+            </div>
           </div>
           <div class="table-wrap">
             <table>
@@ -122,6 +137,11 @@
               <tbody id="savedPurchasesBody"></tbody>
             </table>
           </div>
+          <div class="pagination">
+            <button id="purchasePrev" type="button">← Anterior</button
+            ><span id="purchasePage">Página 1 de 1</span
+            ><button id="purchaseNext" type="button">Siguiente →</button>
+          </div>
           <div class="empty" id="savedEmpty">
             Todavía no hay facturas guardadas para esta empresa.
           </div>
@@ -134,6 +154,15 @@
                 <h2>Información del proceso</h2>
               </div>
               <p>El lote se asociará con la empresa activa.</p>
+            </div>
+            <div class="form-grid import-method">
+              <label
+                ><span>Método de importación</span
+                ><select id="purchaseImportMethod">
+                  <option value="TXT">TXT para consultar al SRI</option>
+                  <option value="XML">XML directos</option>
+                </select></label
+              >
             </div>
             <form id="batchForm">
               <input name="companyId" id="batchCompanyId" type="hidden" />
@@ -154,6 +183,31 @@
                 </label>
                 <button class="button primary" type="submit">
                   Importar lote
+                </button>
+              </div>
+            </form>
+            <form class="hidden" id="purchaseXmlForm">
+              <div class="file-row">
+                <label class="dropzone" for="purchaseXmlFiles">
+                  <span class="file-icon">XML</span>
+                  <span
+                    ><strong id="purchaseXmlLabel"
+                      >Seleccionar XML de compras</strong
+                    ><small
+                      >Puedes seleccionar varias facturas autorizadas</small
+                    ></span
+                  >
+                  <input
+                    id="purchaseXmlFiles"
+                    name="xmls"
+                    type="file"
+                    accept=".xml,text/xml,application/xml"
+                    multiple
+                    required
+                  />
+                </label>
+                <button class="button secondary" type="submit">
+                  Importar XML
                 </button>
               </div>
             </form>
@@ -181,9 +235,6 @@
                     multiple
                     disabled
                 /></label>
-                <button class="button primary" id="processButton">
-                  Consultar SRI
-                </button>
               </div>
             </section>
             <section class="card table-card">
@@ -233,7 +284,19 @@
             >
               Ventas guardadas</button
             ><button class="view-button" data-sales-view="import" type="button">
-              + Importar Ventas
+              + Importar Ventas</button
+            ><button
+              class="view-button"
+              data-sales-view="withholdings"
+              type="button"
+            >
+              Retenciones guardadas</button
+            ><button
+              class="view-button"
+              data-sales-view="import-withholdings"
+              type="button"
+            >
+              + Importar Retenciones
             </button>
           </div>
         </div>
@@ -243,11 +306,26 @@
               <span class="step">V</span>
               <h2>Ventas guardadas</h2>
             </div>
-            <input
-              id="salesSearch"
-              type="search"
-              placeholder="Buscar factura o cliente"
-            />
+            <div class="saved-filters">
+              <input
+                id="salesSearch"
+                type="search"
+                placeholder="Buscar factura o cliente"
+              /><label
+                ><span>Desde</span><input id="salesFrom" type="date" /></label
+              ><label
+                ><span>Hasta</span><input id="salesTo" type="date" /></label
+              ><label
+                ><span>Mostrar</span
+                ><select id="salesLimit">
+                  <option>25</option>
+                  <option selected>50</option>
+                  <option>100</option>
+                  <option>250</option>
+                </select></label
+              ><small id="salesFilterCount"></small
+              ><small id="salesRetentionCount"></small>
+            </div>
           </div>
           <div class="table-wrap">
             <table>
@@ -260,10 +338,17 @@
                   <th>Subtotal</th>
                   <th>IVA</th>
                   <th>Total</th>
+                  <th>Retención Renta</th>
+                  <th>Retención IVA</th>
                 </tr>
               </thead>
               <tbody id="savedSalesBody"></tbody>
             </table>
+          </div>
+          <div class="pagination">
+            <button id="salesPrev" type="button">← Anterior</button
+            ><span id="salesPage">Página 1 de 1</span
+            ><button id="salesNext" type="button">Siguiente →</button>
           </div>
           <div class="empty" id="salesEmpty">
             Todavía no hay ventas guardadas.
@@ -334,10 +419,8 @@
                     type="file"
                     accept=".xml"
                     multiple
-                    disabled /></label
-                ><button class="button primary" id="salesProcessButton">
-                  Consultar SRI
-                </button>
+                    disabled
+                /></label>
               </div>
             </section>
             <section class="card table-card">
@@ -358,6 +441,115 @@
             </section>
           </section>
         </div>
+        <section class="card table-card hidden" id="savedWithholdingsView">
+          <div class="table-toolbar">
+            <div>
+              <span class="step">RT</span>
+              <h2>Retenciones guardadas</h2>
+            </div>
+            <div class="saved-filters">
+              <input
+                id="withholdingSearch"
+                type="search"
+                placeholder="Buscar retención, cliente o factura"
+              /><label
+                ><span>Desde</span
+                ><input id="withholdingFrom" type="date" /></label
+              ><label
+                ><span>Hasta</span
+                ><input id="withholdingTo" type="date" /></label
+              ><label
+                ><span>Mostrar</span
+                ><select id="withholdingLimit">
+                  <option>25</option>
+                  <option selected>50</option>
+                  <option>100</option>
+                  <option>250</option>
+                </select></label
+              ><small id="withholdingFilterCount"></small>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Retención</th>
+                  <th>Cliente / agente de retención</th>
+                  <th>Factura sustentada</th>
+                  <th>Renta retenida</th>
+                  <th>IVA retenido</th>
+                  <th>Total retenido</th>
+                  <th>Líneas</th>
+                </tr>
+              </thead>
+              <tbody id="savedWithholdingsBody"></tbody>
+            </table>
+          </div>
+          <div class="pagination">
+            <button id="withholdingPrev" type="button">← Anterior</button
+            ><span id="withholdingPage">Página 1 de 1</span
+            ><button id="withholdingNext" type="button">Siguiente →</button>
+          </div>
+          <div class="empty" id="withholdingsEmpty">
+            Todavía no hay retenciones guardadas para esta empresa.
+          </div>
+        </section>
+        <section class="card setup-card hidden" id="importWithholdingsView">
+          <div class="section-heading">
+            <div>
+              <span class="step">RT</span>
+              <h2>Importar retenciones</h2>
+            </div>
+            <p>
+              Solo se guardarán comprobantes autorizados vinculados a facturas.
+            </p>
+          </div>
+          <div class="form-grid import-method">
+            <label
+              ><span>Método de importación</span
+              ><select id="withholdingImportMethod">
+                <option value="TXT">TXT para consultar al SRI</option>
+                <option value="XML">XML directos</option>
+              </select></label
+            >
+          </div>
+          <form id="withholdingForm">
+            <div class="file-row">
+              <label class="dropzone" for="withholdingTxt"
+                ><span class="file-icon" id="withholdingFileIcon">TXT</span
+                ><span
+                  ><strong id="withholdingTxtLabel"
+                    >Seleccionar TXT de retenciones</strong
+                  ><small id="withholdingFileHint"
+                    >Debe contener la columna CLAVE_ACCESO</small
+                  ></span
+                ><input
+                  id="withholdingTxt"
+                  name="txt"
+                  type="file"
+                  accept=".txt,.tsv,text/plain"
+                  required /></label
+              ><button class="button primary" type="submit">
+                Consultar e importar
+              </button>
+            </div>
+          </form>
+          <div class="summary-grid hidden" id="withholdingSummary"></div>
+          <div class="table-wrap hidden" id="withholdingResultsWrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Clave</th>
+                  <th>Estado</th>
+                  <th>Factura sustentada</th>
+                  <th>Resultado</th>
+                </tr>
+              </thead>
+              <tbody id="withholdingResultsBody"></tbody>
+            </table>
+          </div>
+        </section>
       </div>
       <section class="card report-module hidden" id="reportsModule">
         <div class="section-heading">

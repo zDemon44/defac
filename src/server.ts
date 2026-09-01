@@ -4,7 +4,7 @@ import express, {
   type Response,
 } from "express";
 import multer from "multer";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { execFile } from "node:child_process";
@@ -13,7 +13,10 @@ import { getSriConfig } from "./config/sri.config.js";
 import type { BatchItemResult, BatchLog } from "./models/batchProcess.js";
 import type { ImportedInvoiceRow } from "./models/importedInvoice.js";
 import { parseInvoiceXml } from "./parsers/xml/factura.parser.js";
-import { processBatch } from "./services/batch/batchProcessor.service.js";
+import {
+  processBatch,
+  removeDownloadedBatchXml,
+} from "./services/batch/batchProcessor.service.js";
 import { importSriTxt } from "./services/imports/txtImport.service.js";
 import { createSriAuthorizationClient } from "./sri/sriSoapClient.js";
 import { collectExcelData } from "./services/excel/excelData.service.js";
@@ -47,6 +50,17 @@ import { validateInvoiceOwnership } from "./services/validation/invoiceOwnership
 import { parsePointDocExcel } from "./services/imports/pointDocExcel.service.js";
 import { normalizePointDocSale } from "./services/imports/pointDocNormalizer.service.js";
 import { parseContificoExcel } from "./services/imports/contificoExcel.service.js";
+import pLimit from "p-limit";
+import { queryAuthorization } from "./sri/sriAuthorization.service.js";
+import { parseWithholdingXml } from "./parsers/xml/retencion.parser.js";
+import { importWithholdingKeys } from "./services/imports/withholdingTxt.service.js";
+import { withRetry } from "./utils/retry.js";
+import {
+  findExistingWithholdingKeys,
+  listStoredWithholdings,
+  listInvoiceWithholdingTotals,
+  saveWithholding,
+} from "./database/withholding.repository.js";
 
 interface ActiveBatch {
   id: string;
@@ -168,6 +182,226 @@ app.get("/api/companies/:id/sales", async (request, response) =>
     invoices: await listStoredSales(parseId(request.params.id)),
   }),
 );
+app.get("/api/companies/:id/withholdings", async (request, response) =>
+  response.json({
+    withholdings: await listStoredWithholdings(parseId(request.params.id)),
+  }),
+);
+app.post(
+  "/api/companies/:id/withholdings/import",
+  upload.single("txt"),
+  async (request, response) => {
+    if (!request.file)
+      return response
+        .status(400)
+        .json({ error: "Seleccione el TXT de retenciones." });
+    const companyId = parseId(request.params.id);
+    const company = await findCompanyById(companyId);
+    if (!company)
+      return response
+        .status(400)
+        .json({ error: "Seleccione una empresa válida." });
+    const keys = importWithholdingKeys(request.file.buffer.toString("utf8"));
+    const existing = await findExistingWithholdingKeys(companyId, keys);
+    const pending = keys.filter((key) => !existing.has(key));
+    if (!pending.length)
+      return response.status(409).json({
+        error: "Todas las retenciones del archivo ya están guardadas.",
+      });
+    const client = await createSriAuthorizationClient(
+      config.wsdlUrl,
+      config.timeoutMs,
+    );
+    const directory = path.join(config.outputDir, "xml", "retenciones");
+    await mkdir(directory, { recursive: true });
+    const limit = pLimit(config.concurrency);
+    const results = await Promise.all(
+      pending.map((key) =>
+        limit(async () => {
+          try {
+            const queried = await withRetry(
+              () => queryAuthorization(client, key),
+              config.maxRetries,
+              config.retryDelayMs,
+            );
+            const authorization = queried.authorizations.find(
+              (item) =>
+                item.estado?.toUpperCase() === "AUTORIZADO" && item.comprobante,
+            );
+            if (!authorization?.comprobante)
+              throw new Error(
+                "El SRI no devolvió una retención autorizada con XML.",
+              );
+            const item = parseWithholdingXml(authorization.comprobante);
+            if (!identificationsMatch(item.retainedSubjectId, company.taxId))
+              throw new Error(
+                `El sujeto retenido (${item.retainedSubjectId}) no coincide con la empresa activa (${company.taxId}).`,
+              );
+            item.authorizationNumber =
+              authorization.numeroAutorizacion ?? item.accessKey;
+            if (authorization.fechaAutorizacion)
+              item.authorizationDate = String(authorization.fechaAutorizacion);
+            const destination = path.join(directory, `${key}.xml`);
+            await writeFile(destination, authorization.comprobante, "utf8");
+            await saveWithholding(
+              companyId,
+              item,
+              destination,
+              authorization.comprobante,
+            );
+            await unlink(destination).catch((error: NodeJS.ErrnoException) => {
+              if (error.code !== "ENOENT")
+                console.warn(
+                  `[WARN] No se pudo eliminar el XML temporal ${destination}: ${error.message}`,
+                );
+            });
+            return {
+              key,
+              status: "GUARDADA",
+              documentNumber: item.documentNumber,
+              invoices: item.documents.map(
+                (document) => document.supportDocumentNumber,
+              ),
+              incomeTaxWithheld: item.incomeTaxWithheld,
+              vatWithheld: item.vatWithheld,
+              totalWithheld: item.totalWithheld,
+            };
+          } catch (error) {
+            const message =
+              error instanceof Error ? error.message : String(error);
+            const connectionError =
+              /Hostname\/IP does not match certificate|altnames|ECONN|ETIMEDOUT|EAI_AGAIN|socket|timeout/i.test(
+                message,
+              );
+            return {
+              key,
+              status: connectionError ? "ERROR_CONEXION" : "RECHAZADA",
+              message: connectionError
+                ? "Error temporal de conexión segura con el SRI. La retención no fue rechazada por el SRI; puede intentar nuevamente."
+                : message,
+            };
+          }
+        }),
+      ),
+    );
+    return response.json({
+      accepted: results.filter((item) => item.status === "GUARDADA").length,
+      omitted: existing.size,
+      rejected: results.filter((item) => item.status !== "GUARDADA"),
+      results,
+    });
+  },
+);
+
+app.post(
+  "/api/companies/:id/withholdings/direct-xml",
+  upload.array("xmls", 500),
+  async (request, response) => {
+    const companyId = parseId(request.params.id);
+    const company = await findCompanyById(companyId);
+    if (!company)
+      return response
+        .status(400)
+        .json({ error: "Seleccione una empresa válida." });
+    const files = request.files as Express.Multer.File[] | undefined;
+    if (!files?.length)
+      return response
+        .status(400)
+        .json({ error: "Seleccione al menos un XML de retención." });
+
+    const parsed: Array<{
+      file: Express.Multer.File;
+      raw: string;
+      item: ReturnType<typeof parseWithholdingXml>;
+    }> = [];
+    const rejected: Array<{
+      key?: string;
+      filename?: string;
+      status: string;
+      message: string;
+    }> = [];
+    for (const file of files) {
+      try {
+        const raw = file.buffer.toString("utf8");
+        const item = parseWithholdingXml(raw);
+        if (!identificationsMatch(item.retainedSubjectId, company.taxId))
+          throw new Error(
+            `El sujeto retenido (${item.retainedSubjectId}) no coincide con la empresa activa (${company.taxId}).`,
+          );
+        parsed.push({ file, raw, item });
+      } catch (error) {
+        rejected.push({
+          key: file.originalname,
+          filename: file.originalname,
+          status: "RECHAZADA",
+          message: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
+    const unique = Array.from(
+      new Map(parsed.map((entry) => [entry.item.accessKey, entry])).values(),
+    );
+    const duplicateUploads = parsed.length - unique.length;
+    const existing = await findExistingWithholdingKeys(
+      companyId,
+      unique.map((entry) => entry.item.accessKey),
+    );
+    const pending = unique.filter(
+      (entry) => !existing.has(entry.item.accessKey),
+    );
+    const directory = path.join(config.outputDir, "xml", "retenciones");
+    await mkdir(directory, { recursive: true });
+    const results: Array<{
+      key: string;
+      status: string;
+      invoices?: string[];
+      incomeTaxWithheld?: number;
+      vatWithheld?: number;
+      totalWithheld?: number;
+      message?: string;
+    }> = [];
+    for (const entry of pending) {
+      const destination = path.join(directory, `${entry.item.accessKey}.xml`);
+      try {
+        await writeFile(destination, entry.raw, "utf8");
+        await saveWithholding(companyId, entry.item, destination, entry.raw);
+        await unlink(destination).catch((error: NodeJS.ErrnoException) => {
+          if (error.code !== "ENOENT")
+            console.warn(
+              `[WARN] No se pudo eliminar el XML temporal ${destination}: ${error.message}`,
+            );
+        });
+        results.push({
+          key: entry.item.accessKey,
+          status: "GUARDADA",
+          invoices: entry.item.documents.map(
+            (document) => document.supportDocumentNumber,
+          ),
+          incomeTaxWithheld: entry.item.incomeTaxWithheld,
+          vatWithheld: entry.item.vatWithheld,
+          totalWithheld: entry.item.totalWithheld,
+        });
+      } catch (error) {
+        results.push({
+          key: entry.item.accessKey,
+          status: "RECHAZADA",
+          message: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+    const allRejected = [
+      ...rejected,
+      ...results.filter((item) => item.status !== "GUARDADA"),
+    ];
+    return response.json({
+      accepted: results.filter((item) => item.status === "GUARDADA").length,
+      omitted: existing.size + duplicateUploads,
+      rejected: allRejected,
+      results: [...results, ...rejected],
+    });
+  },
+);
 
 app.get("/api/companies/:id/purchases/report", async (request, response) => {
   const company = await findCompanyById(parseId(request.params.id));
@@ -263,9 +497,16 @@ app.get("/api/companies/:id/reports", async (request, response) => {
   const movements = new Map(
     stored.map((item) => [item.accessKey, item.movementType]),
   );
+  const withholdingTotals = new Map(
+    (await listInvoiceWithholdingTotals(company.id)).map((item) => [
+      item.documentNumber,
+      item,
+    ]),
+  );
   data.invoices = data.invoices.map((item) => ({
     ...item,
     movementType: movements.get(item.invoice.accessKey) ?? "PURCHASE",
+    ...(withholdingTotals.get(item.invoice.documentNumber) ?? {}),
   }));
   const excelDir = path.join(config.outputDir, "excel");
   await mkdir(excelDir, { recursive: true });
@@ -288,6 +529,132 @@ app.get("/api/companies/:id/reports", async (request, response) => {
   );
   return response.download(outputPath, filename);
 });
+
+app.post(
+  "/api/companies/:id/purchases/direct-xml",
+  upload.array("xmls", 500),
+  async (request, response) => {
+    const companyId = parseId(request.params.id);
+    const company = await findCompanyById(companyId);
+    if (!company)
+      return response.status(404).json({ error: "Empresa no encontrada." });
+    const files = request.files as Express.Multer.File[] | undefined;
+    if (!files?.length)
+      return response
+        .status(400)
+        .json({ error: "Seleccione al menos un XML de compra." });
+
+    const parsed: Array<{
+      file: Express.Multer.File;
+      raw: string;
+      invoice: ReturnType<typeof parseInvoiceXml>;
+    }> = [];
+    const rejected: Array<{ filename: string; error: string }> = [];
+    for (const file of files) {
+      try {
+        const raw = file.buffer.toString("utf8");
+        const invoice = parseInvoiceXml(raw);
+        validateInvoiceOwnership(invoice, company.taxId, "PURCHASE");
+        parsed.push({ file, raw, invoice });
+      } catch (error) {
+        rejected.push({
+          filename: file.originalname,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
+    const unique = Array.from(
+      new Map(parsed.map((item) => [item.invoice.accessKey, item])).values(),
+    );
+    const duplicateUploads = parsed.length - unique.length;
+    const existing = await findExistingPurchaseKeys(
+      companyId,
+      unique.map((item) => item.invoice.accessKey),
+    );
+    const pending = unique.filter(
+      (item) => !existing.has(item.invoice.accessKey),
+    );
+    if (!pending.length)
+      return response.status(400).json({
+        error: rejected.length
+          ? "Ningún XML válido pudo importarse."
+          : "Todos los XML seleccionados ya están guardados.",
+        omitted: existing.size + duplicateUploads,
+        rejected,
+      });
+
+    const firstDate = pending[0]!.invoice.issueDate.match(
+      /^(\d{2})\/(\d{2})\/(\d{4})$/,
+    );
+    if (!firstDate)
+      throw new Error("La fecha de emisión del XML no es válida.");
+    const rows: ImportedInvoiceRow[] = pending.map(({ invoice }, index) => ({
+      rowNumber: index + 1,
+      issuerRuc: invoice.ruc,
+      issuerBusinessName: invoice.businessName,
+      documentType: "Factura",
+      documentNumber: invoice.documentNumber,
+      accessKey: invoice.accessKey,
+      authorizationDate: invoice.authorizationDate ?? "",
+      issueDate: invoice.issueDate,
+      recipientIdentification: invoice.recipientIdentification,
+      reportedSubtotal: invoice.subtotal,
+      reportedVat: invoice.vatTotal,
+      reportedTotal: invoice.total,
+      modifiedDocumentNumber: "",
+    }));
+    const databaseBatchId = await createPurchaseBatch(
+      companyId,
+      Number(firstDate[3]),
+      Number(firstDate[2]),
+      "XML manual de compras",
+      rows,
+    );
+    const xmlDir = path.join(config.outputDir, "xml");
+    await mkdir(xmlDir, { recursive: true });
+    const results: BatchItemResult[] = [];
+    for (const item of pending) {
+      const destination = path.join(xmlDir, `${item.invoice.accessKey}.xml`);
+      await writeFile(destination, item.raw, "utf8");
+      results.push({
+        accessKey: item.invoice.accessKey,
+        documentNumber: item.invoice.documentNumber,
+        issuerBusinessName: item.invoice.businessName,
+        status: "XML_CARGADO_MANUAL",
+        authorizationNumber:
+          item.invoice.authorizationNumber ?? item.invoice.accessKey,
+        ...(item.invoice.authorizationDate
+          ? { authorizationDate: item.invoice.authorizationDate }
+          : {}),
+        xmlPath: destination,
+        message: `Importado manualmente desde ${item.file.originalname}`,
+        processedAt: new Date().toISOString(),
+      });
+    }
+    const now = new Date().toISOString();
+    const log: BatchLog = {
+      startedAt: now,
+      finishedAt: now,
+      environment: config.environment,
+      inputFile: "XML manual de compras",
+      summary: summarize(results),
+      results,
+    };
+    await savePurchaseBatchResult(
+      databaseBatchId,
+      companyId,
+      company.taxId,
+      log,
+    );
+    await removeDownloadedBatchXml(log, config.outputDir);
+    return response.json({
+      accepted: results.length,
+      omitted: existing.size + duplicateUploads,
+      rejected,
+    });
+  },
+);
 
 app.post("/api/batches", upload.single("txt"), (request, response) => {
   if (!request.file)
@@ -353,7 +720,11 @@ app.post(
   upload.array("xmls", 500),
   async (request, response) => {
     const provider =
-      request.body.provider === "PUNTO_DOC" ? "Punto Doc" : "Security Data";
+      request.body.provider === "SRI"
+        ? "Facturador SRI"
+        : request.body.provider === "PUNTO_DOC"
+          ? "Punto Doc"
+          : "Security Data";
     const companyId = parseId(request.body.companyId);
     const company = await findCompanyById(companyId);
     if (!company)
@@ -461,6 +832,7 @@ app.post(
       results,
     };
     await saveSalesBatchResult(databaseBatchId, companyId, company.taxId, log);
+    await removeDownloadedBatchXml(log, config.outputDir);
     return response.json({
       accepted: results.length,
       omitted: existing.size + duplicateUploads,
@@ -732,6 +1104,7 @@ app.post("/api/batches/:id/process", async (request, response) => {
       batch.metadata.ruc,
       batch.result,
     );
+  await removeDownloadedBatchXml(batch.result, config.outputDir);
   await persistBatch(batch);
   return response.json(batch.result);
 });
@@ -804,6 +1177,7 @@ app.post(
         batch.metadata.ruc,
         batch.result,
       );
+    await removeDownloadedBatchXml(batch.result, config.outputDir);
     await persistBatch(batch);
     return response.json({ accepted, rejected, result: batch.result });
   },

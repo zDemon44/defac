@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<autorizacion>
+<estado>AUTORIZADO</estado>
+<numeroAutorizacion>2408202607179001215800120011000000970210009702117</numeroAutorizacion>
+<fechaAutorizacion>2026-08-24T10:08:39-05:00</fechaAutorizacion>
+<ambiente>PRODUCCIÓN</ambiente>
+<comprobante><![CDATA[<?xml version="1.0" encoding="utf-8" standalone="no"?><comprobanteRetencion id="comprobante" version="1.0.0">
+  <infoTributaria>
+    <ambiente>2</ambiente>
+    <tipoEmision>1</tipoEmision>
+    <razonSocial>EMPRESA DURINI INDUSTRIA DE MADERA C.A. EDIMCA</razonSocial>
+    <nombreComercial>EMPRESA DURINI INDUSTRIA DE MADERA C.A. EDIMCA</nombreComercial>
+    <ruc>1790012158001</ruc>
+    <claveAcceso>2408202607179001215800120011000000970210009702117</claveAcceso>
+    <codDoc>07</codDoc>
+    <estab>001</estab>
+    <ptoEmi>100</ptoEmi>
+    <secuencial>000097021</secuencial>
+    <dirMatriz>AV.GENERAL ELOY ALFARO, No.34-194 E12 Y CATALINA ALDAZ</dirMatriz>
+  </infoTributaria>
+  <infoCompRetencion>
+    <fechaEmision>24/08/2026</fechaEmision>
+    <dirEstablecimiento>AV.GENERAL ELOY ALFARO, No.34-194 E12 Y CATALINA ALDAZ</dirEstablecimiento>
+    <contribuyenteEspecial>5368</contribuyenteEspecial>
+    <obligadoContabilidad>SI</obligadoContabilidad>
+    <tipoIdentificacionSujetoRetenido>04</tipoIdentificacionSujetoRetenido>
+    <razonSocialSujetoRetenido>GUTIERREZ ARMENDARIZ TERESA GRACE</razonSocialSujetoRetenido>
+    <identificacionSujetoRetenido>0908653132001</identificacionSujetoRetenido>
+    <periodoFiscal>08/2026</periodoFiscal>
+  </infoCompRetencion>
+  <impuestos>
+    <impuesto>
+      <codigo>1</codigo>
+      <codigoRetencion>312</codigoRetencion>
+      <baseImponible>108.1700</baseImponible>
+      <porcentajeRetener>2.0000</porcentajeRetener>
+      <valorRetenido>2.1600</valorRetenido>
+      <codDocSustento>01</codDocSustento>
+      <numDocSustento>001002000000589</numDocSustento>
+      <fechaEmisionDocSustento>20/08/2026</fechaEmisionDocSustento>
+    </impuesto>
+    <impuesto>
+      <codigo>1</codigo>
+      <codigoRetencion>3440</codigoRetencion>
+      <baseImponible>135.0000</baseImponible>
+      <porcentajeRetener>3.0000</porcentajeRetener>
+      <valorRetenido>4.0500</valorRetenido>
+      <codDocSustento>01</codDocSustento>
+      <numDocSustento>001002000000589</numDocSustento>
+      <fechaEmisionDocSustento>20/08/2026</fechaEmisionDocSustento>
+    </impuesto>
+    <impuesto>
+      <codigo>2</codigo>
+      <codigoRetencion>1</codigoRetencion>
+      <baseImponible>16.2300</baseImponible>
+      <porcentajeRetener>30.0000</porcentajeRetener>
+      <valorRetenido>4.8700</valorRetenido>
+      <codDocSustento>01</codDocSustento>
+      <numDocSustento>001002000000589</numDocSustento>
+      <fechaEmisionDocSustento>20/08/2026</fechaEmisionDocSustento>
+    </impuesto>
+    <impuesto>
+      <codigo>2</codigo>
+      <codigoRetencion>2</codigoRetencion>
+      <baseImponible>20.2500</baseImponible>
+      <porcentajeRetener>70.0000</porcentajeRetener>
+      <valorRetenido>14.1800</valorRetenido>
+      <codDocSustento>01</codDocSustento>
+      <numDocSustento>001002000000589</numDocSustento>
+      <fechaEmisionDocSustento>20/08/2026</fechaEmisionDocSustento>
+    </impuesto>
+  </impuestos>
+  <infoAdicional>
+    <campoAdicional nombre="Email">villaelectric01@gmail.com</campoAdicional>
+  </infoAdicional>
+<ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#" xmlns:etsi="http://uri.etsi.org/01903/v1.3.2#" Id="Signature92788">
+<ds:SignedInfo Id="Signature-SignedInfo618136">
+<ds:CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/>
+<ds:SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"/>
+<ds:Reference Id="SignedPropertiesID728476" Type="http://uri.etsi.org/01903#SignedProperties" URI="#Signature92788-SignedProperties949968">
+<ds:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/>
+<ds:DigestValue>UC1VVBfNYfxVrj/ayKo0STFdLtE=</ds:DigestValue>
+</ds:Reference>
+<ds:Reference URI="#Certificate1695157">
+<ds:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/>
+<ds:DigestValue>vY2Rs54+9Lympd2dH7YDKG3LyBY=</ds:DigestValue>
+</ds:Reference>
+<ds:Reference Id="Reference-ID-76883" URI="#comprobante">
+<ds:Transforms>
+<ds:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/>
+</ds:Transforms>
+<ds:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/>
+<ds:DigestValue>yU0zzubVZ9lgato3f/IbpLzNw6M=</ds:DigestValue>
+</ds:Reference>
+</ds:SignedInfo>
+<ds:SignatureValue Id="SignatureValue479606">
+M/aaSXD/cqrNzjPcwWKKLPWOWGsncmdU2NTERc0Q5NVUs+aHJEIfvDDwMpj/tG+yXwSXJX5wCz/U
+eVr1OvZA00n+kaBoApyh8SpTUvXIzV/nvBhwvsCUUOA4Va+2o3giibksYjwYMBmxin3RjFGxI0gk
+seolaGdmTARcfs05Tm6s2JckU1NeWi8Zy0cwA9CsK/3RdKpdSNCfPZWafG6wyBapJNAQ+wPdaRcU
+wBjOOUqWLkIHfL9is5X/gQlFGMubDa865mZqPeHmwFB5CqSET0lRnNWLAJsFrerF6M/s0jwOIrRS
+yX1a4OLkhX2zN4DrjJk+K/Wbp9dLEzcmHDjLXw==
+</ds:SignatureValue>
+<ds:KeyInfo Id="Certificate1695157">
+<ds:X509Data>
+<ds:X509Certificate>
+MIIJ/jCCB+agAwIBAgIIBgC179H/mbMwDQYJKoZIhvcNAQELBQAwgbgxCzAJBgNVBAYTAkVTMUQw
+QgYDVQQHDDtCYXJjZWxvbmEgKHNlZSBjdXJyZW50IGFkZHJlc3MgYXQgd3d3LnVhbmF0YWNhLmNv
+bS9hZGRyZXNzKTEWMBQGA1UECgwNVUFOQVRBQ0EgUy5BLjEVMBMGA1UECwwMVFNQLVVBTkFUQUNB
+MRowGAYDVQQDDBFVQU5BVEFDQSBDQTIgMjAxNjEYMBYGA1UEYQwPVkFURVMtQTY2NzIxNDk5MB4X
+DTI1MTIxNTIwNDAwMFoXDTI4MTIxNDIwNDAwMFowgfoxCzAJBgNVBAYTAkVDMTcwNQYDVQQKDC5F
+TVBSRVNBIERVUklOSSBJTkRVU1RSSUEgREUgTUFERVJBIEMuQS4gRURJTUNBMRswGQYDVQQMDBJH
+RVJFTlRFIEZJTkFOQ0lFUkExFDASBgNVBAQMC1ZBQ0EgTUVESU5BMRwwGgYDVQQqDBNFTElaQUJF
+VEggQUxFSkFORFJBMRkwFwYDVQQFExBJRENFQy0xNzE4NDQzNzcxMSgwJgYDVQQDDB9FTElaQUJF
+VEggQUxFSkFORFJBIFZBQ0EgTUVESU5BMRwwGgYDVQRhDBNWQVRFQy0xNzkwMDEyMTU4MDAxMIIB
+IjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAg3vsXZPsd1CHE1g4I70lwotTqm8tRvJM6Mt2
+8LtoVinbcm5bktp9XdSVMpUtTqG297vN3EpiCSzjKephZo9QKC4A2pgHxzgHuL8e1UuiYG7WklXb
+t9/OtmaHi8zecO7EN2TPBvimy0Rf+Y/55FuxL7LHhPF2HXuRVslfRXx1aeJmjBX1AvbdNBqLLnDg
+/2JJPq7qfBLW1zuC4puqSRx3+AjF2z1vVTc2tCq5O2leosYT+K3BHiYIacyfLDaXiVf0p1fyI6fW
+oRZz4tyXtcEgQc9F3dHFGWnFVaAgYj2KEJegy9s7FIqznHzT0UxVrZ8dWTzt4PnxFxGXy/atjw06
+FwIDAQABo4IExjCCBMIwGwYLKwYBBAGC8TZmAwEEDAwKMTcxODQ0Mzc3MTAeBgsrBgEEAYLxNmYD
+CwQPDA0xNzkwMDEyMTU4MDAxMIHXBggrBgEFBQcBAQSByjCBxzBVBggrBgEFBQcwAoZJaHR0cDov
+L3d3dy51YW5hdGFjYS5jb20vcHVibGljL2Rvd25sb2FkL3RzcF9jZXJ0aWZpY2F0ZXMvc3Vib3Jk
+aW5hdGUyLmNydDA2BggrBgEFBQcwAYYqaHR0cDovL29jc3AxLnVhbmF0YWNhLmNvbS9wdWJsaWMv
+cGtpL29jc3AvMDYGCCsGAQUFBzABhipodHRwOi8vb2NzcDIudWFuYXRhY2EuY29tL3B1YmxpYy9w
+a2kvb2NzcC8wHQYDVR0OBBYEFOKOtPwczSdKcIfZJcHH89pOP0j4MAwGA1UdEwEB/wQCMAAwHwYD
+VR0jBBgwFoAUfVfnYHPOB0ap4qNo8OERsnSSc/0wgbEGA1UdIASBqTCBpjCBowYMKwYBBAGC8TZm
+AgIBMIGSMDcGCCsGAQUFBwIBFitodHRwczovL3d3dy51YW5hdGFjYS5jb20vcHVibGljL3BraS9k
+cGMtZWMvMFcGCCsGAQUFBwICMEsMSUNFUlRJRklDQURPIERFIE1JRU1CUk8gREUgRU1QUkVTQSBP
+IEVOIFJFTEFDSU9OIERFIERFUEVOREVOQ0lBIEVOIEFSQ0hJVk8wgY8GA1UdHwSBhzCBhDBAoD6g
+PIY6aHR0cDovL2NybDEudWFuYXRhY2EuY29tL3B1YmxpYy9wa2kvY3JsL0NBMnN1Ym9yZGluYWRh
+LmNybDBAoD6gPIY6aHR0cDovL2NybDIudWFuYXRhY2EuY29tL3B1YmxpYy9wa2kvY3JsL0NBMnN1
+Ym9yZGluYWRhLmNybDAOBgNVHQ8BAf8EBAMCBeAwHQYDVR0lBBYwFAYIKwYBBQUHAwIGCCsGAQUF
+BwMEMIIB5AYDVR0RBIIB2zCCAdeBGGpjY2FzdHJvQGNvdG9wYXhpLmNvbS5lY6AbBgsrBgEEAYLx
+NmYDAaAMDAoxNzE4NDQzNzcxoCQGCysGAQQBgvE2ZgMCoBUME0VMSVpBQkVUSCBBTEVKQU5EUkGg
+FQYLKwYBBAGC8TZmAwOgBgwEVkFDQaAXBgsrBgEEAYLxNmYDBKAIDAZNRURJTkGgIwYLKwYBBAGC
+8TZmAwWgFAwSR0VSRU5URSBGSU5BTkNJRVJBoBgGCysGAQQBgvE2ZgMHoAkMB0lBUVVJVE+gHwYL
+KwYBBAGC8TZmAwigEAwOMDA1OTM5ODc1NjQzNTagFgYLKwYBBAGC8TZmAwmgBwwFUVVJVE+gPwYL
+KwYBBAGC8TZmAwqgMAwuRU1QUkVTQSBEVVJJTkkgSU5EVVNUUklBIERFIE1BREVSQSBDLkEuIEVE
+SU1DQaAeBgsrBgEEAYLxNmYDC6APDA0xNzkwMDEyMTU4MDAxoBMGCysGAQQBgvE2ZgMMoAQMAkVD
+oEAGCysGAQQBgvE2ZgMyoDEML01JRU1CUk8gREUgRU1QUkVTQSBPIEVOIFJFTEFDSU9OIERFIERF
+UEVOREVOQ0lBoBgGCysGAQQBgvE2ZgMzoAkMB0FSQ0hJVk8wDQYJKoZIhvcNAQELBQADggIBAKIm
++jruql948d36C5xYgktgLQcdQMCRKdReSbfjeQqUmlaa4ZCPcHZvVtzpUl/aHiwrT0KTGCBTH2Zk
+qEzPonyfBU6wHJ+WKX2Xbh1fltTkRtcq3u6JrlSCd3pdcy5dTNcsPazvcVX8y+YMSFUCP7FfLfAe
+ut4dBv8iTqmoDRdrDF9BKKTURqdVUb08dbd8wasTlll5qgKYArSzBUiTbyfSpQhAk2wwH/0gyc3l
+rNuzaFkZ4bIfbl8/nmVenRnMun6pqHesdKpCbOx6KV6dykcZvecnixagFNtux4n08kJmqciFz632
+WnguF992gmy5htNbNSRgWz89bKLlEXWTabdjATZRjQtJtYtk0PXQ+8x/kSAAOZPe5c8URxInWQgw
+vTQPiFPlqn5KbJG0DqZoR9k6/brPtDKG1yqoc6lkQDgQKRCC/KTGU2J6qfjgI4eWO2Ey/+c2CzNB
+H1CaWdmhnfr93UO/Cd1vKFC6oIPMr0vvwYLdMqthoYg3pSA81FaD0JXXwjmlEcwW6BfzRJbTRZXU
+VcmxMVzMelMG5I+WWyxhUfNLlDcjQ6ih0ivdD291r8n9mVK2x99SpUtVJVWr9GPrAfw29WsTEokN
+0Vr09wNAta9TcZ6Ned4Gd3vxwOO0L+dYucRtLVokU4674o9qKaEXapVH8QR9ZX5Tga5Sc7ob
+</ds:X509Certificate>
+</ds:X509Data>
+<ds:KeyValue>
+<ds:RSAKeyValue>
+<ds:Modulus>
+g3vsXZPsd1CHE1g4I70lwotTqm8tRvJM6Mt28LtoVinbcm5bktp9XdSVMpUtTqG297vN3EpiCSzj
+KephZo9QKC4A2pgHxzgHuL8e1UuiYG7WklXbt9/OtmaHi8zecO7EN2TPBvimy0Rf+Y/55FuxL7LH
+hPF2HXuRVslfRXx1aeJmjBX1AvbdNBqLLnDg/2JJPq7qfBLW1zuC4puqSRx3+AjF2z1vVTc2tCq5
+O2leosYT+K3BHiYIacyfLDaXiVf0p1fyI6fWoRZz4tyXtcEgQc9F3dHFGWnFVaAgYj2KEJegy9s7
+FIqznHzT0UxVrZ8dWTzt4PnxFxGXy/atjw06Fw==
+</ds:Modulus>
+<ds:Exponent>AQAB</ds:Exponent>
+</ds:RSAKeyValue>
+</ds:KeyValue>
+</ds:KeyInfo>
+<ds:Object Id="Signature92788-Object589242"><etsi:QualifyingProperties Target="#Signature92788"><etsi:SignedProperties Id="Signature92788-SignedProperties949968"><etsi:SignedSignatureProperties><etsi:SigningTime>2026-08-24T10:08:29-05:00</etsi:SigningTime><etsi:SigningCertificate><etsi:Cert><etsi:CertDigest><ds:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/><ds:DigestValue>rW2/x08PoFwDwJyVDuUDGF8tw/U=</ds:DigestValue></etsi:CertDigest><etsi:IssuerSerial><ds:X509IssuerName>2.5.4.97=#0c0f56415445532d413636373231343939,CN=UANATACA CA2 2016,OU=TSP-UANATACA,O=UANATACA S.A.,L=Barcelona (see current address at www.uanataca.com/address),C=ES</ds:X509IssuerName><ds:X509SerialNumber>432545605852567987</ds:X509SerialNumber></etsi:IssuerSerial></etsi:Cert></etsi:SigningCertificate></etsi:SignedSignatureProperties><etsi:SignedDataObjectProperties><etsi:DataObjectFormat ObjectReference="#Reference-ID-76883"><etsi:Description>comprobante</etsi:Description><etsi:MimeType>text/xml</etsi:MimeType></etsi:DataObjectFormat></etsi:SignedDataObjectProperties></etsi:SignedProperties></etsi:QualifyingProperties></ds:Object></ds:Signature></comprobanteRetencion>]]></comprobante>
+<mensajes/>
+</autorizacion>
+
