@@ -10,6 +10,12 @@ import { randomUUID } from "node:crypto";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { getSriConfig } from "./config/sri.config.js";
+import {
+  authRouter,
+  requireAuthentication,
+  requestSecurity,
+  validateAuthConfig,
+} from "./auth/auth.js";
 import type { BatchItemResult, BatchLog } from "./models/batchProcess.js";
 import type { ImportedInvoiceRow } from "./models/importedInvoice.js";
 import { parseInvoiceXml } from "./parsers/xml/factura.parser.js";
@@ -93,7 +99,7 @@ function periodFromAccessKey(rows: ImportedInvoiceRow[]): {
     );
   return { year, month };
 }
-const app = express();
+export const app = express();
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 20 * 1024 * 1024, files: 500 },
@@ -101,7 +107,35 @@ const upload = multer({
 const batches = new Map<string, ActiveBatch>();
 const execFileAsync = promisify(execFile);
 
-app.use(express.json());
+validateAuthConfig();
+app.disable("x-powered-by");
+if (process.env.APP_TRUST_PROXY === "loopback")
+  app.set("trust proxy", "loopback");
+app.use(requestSecurity);
+app.use(express.json({ limit: "32kb" }));
+app.use("/api/auth", authRouter);
+app.get(["/login", "/register"], (_request, response) =>
+  response.sendFile(path.resolve("public/login.html")),
+);
+for (const asset of ["auth.js", "auth.css"]) {
+  app.get(`/${asset}`, (_request, response) =>
+    response.sendFile(path.resolve("public", asset)),
+  );
+}
+app.use(requireAuthentication);
+// Covers every URL-based company lookup, including reports and direct XML uploads.
+app.use("/api/companies/:companyId", async (request, response, next) => {
+  if (request.params.companyId === "active") return next();
+  if (!(await findCompanyById(Number(request.params.companyId))))
+    return response.status(404).json({ error: "Empresa no encontrada." });
+  next();
+});
+app.use("/api/batches/:id", async (request, response, next) => {
+  const batch = batches.get(String(request.params.id));
+  if (!batch || !(await findCompanyById(batch.companyId)))
+    return response.status(404).json({ error: "Lote no encontrado." });
+  next();
+});
 app.use(express.static(path.resolve("public")));
 
 app.get("/api/health", (_request, response) => {
@@ -1202,7 +1236,10 @@ app.get("/api/batches/:id/excel", async (request, response) => {
   await mkdir(excelDir, { recursive: true });
   const inputPath = path.join(excelDir, `${batch.id}.json`);
   const filename = `compras-${batch.metadata.year || "periodo"}-${batch.metadata.month || "00"}.xlsx`;
-  const outputPath = path.join(excelDir, filename);
+  const outputPath = path.join(
+    excelDir,
+    `${batch.id}-${randomUUID()}-${filename}`,
+  );
   await writeFile(inputPath, JSON.stringify(data), "utf8");
   const nodeBin =
     process.env.ARTIFACT_NODE_BIN ||
@@ -1218,20 +1255,41 @@ app.get("/api/batches/:id/excel", async (request, response) => {
 app.use(
   (
     error: unknown,
-    _request: Request,
+    request: Request,
     response: Response,
     _next: NextFunction,
   ) => {
     const message = error instanceof Error ? error.message : String(error);
-    console.error(`[ERROR] ${message}`);
-    response.status(500).json({ error: message });
+    const code = (error as { code?: string; status?: number })?.code;
+    if (request.originalUrl.startsWith("/api/auth/") || code) {
+      console.error(`[ERROR] Solicitud fallida (${code ?? "AUTH"}).`);
+      return response.status(code === "ER_DUP_ENTRY" ? 409 : 503).json({
+        error:
+          code === "ER_DUP_ENTRY"
+            ? "Ese registro ya existe. No se realizaron cambios."
+            : "No se pudo completar la solicitud. Revisa la conexión y la configuración del servidor.",
+      });
+    }
+    const status = (error as { status?: number })?.status;
+    console.error("[ERROR] No se pudo completar la solicitud.");
+    return response
+      .status(status === 413 ? 413 : 400)
+      .json({
+        error:
+          process.env.NODE_ENV === "production"
+            ? "No se pudo completar la solicitud."
+            : message,
+      });
   },
 );
 
 const port = Number(process.env.APP_PORT ?? "3000");
-app.listen(port, "127.0.0.1", () => {
-  console.log(`[INFO] Descargador SRI disponible en http://localhost:${port}`);
-});
+if (process.env.NODE_ENV !== "test")
+  app.listen(port, "127.0.0.1", () => {
+    console.log(
+      `[INFO] Descargador SRI disponible en http://localhost:${port}`,
+    );
+  });
 
 function initialRow(row: ImportedInvoiceRow): BatchItemResult {
   return {

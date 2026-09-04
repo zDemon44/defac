@@ -7,6 +7,8 @@
     "check": "tsc --noEmit",
     "check:wsdl": "tsx src/checkWsdl.ts",
     "check:db": "tsx src/checkDatabase.ts",
+    "auth:migrate": "tsx src/auth/migrate.ts",
+    "auth:grant": "tsx src/auth/grantCompany.ts",
     "consultar": "tsx src/index.ts",
     "procesar:lote": "tsx src/processBatch.ts",
     "web": "tsx src/server.ts",

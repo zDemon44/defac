@@ -179,6 +179,15 @@ select:focus {
   align-items: stretch;
 }
 
+.account-bar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
 #batchForm,
 #withholdingForm {
   margin-top: 22px;

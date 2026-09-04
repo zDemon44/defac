@@ -1,6 +1,7 @@
 import type { ResultSetHeader, RowDataPacket } from "mysql2/promise";
 import type { Company, CompanyInput } from "../models/company.js";
 import { getDatabasePool } from "./mysql.js";
+import { requireUserId } from "../auth/context.js";
 
 interface CompanyRow extends RowDataPacket {
   id: number;
@@ -21,53 +22,97 @@ const selectColumns = `
 
 export async function listCompanies(): Promise<Company[]> {
   const [rows] = await getDatabasePool().query<CompanyRow[]>(
-    `SELECT ${selectColumns} FROM companies WHERE is_active = TRUE ORDER BY business_name`,
+    `SELECT ${selectColumns} FROM companies WHERE is_active = TRUE AND id IN (SELECT company_id FROM auth_company_members WHERE user_id=?) ORDER BY business_name`,
+    [requireUserId()],
   );
   return rows.map(mapCompany);
 }
 
-export async function findCompanyById(id: number): Promise<Company | undefined> {
+export async function findCompanyById(
+  id: number,
+): Promise<Company | undefined> {
   const [rows] = await getDatabasePool().execute<CompanyRow[]>(
-    `SELECT ${selectColumns} FROM companies WHERE id = ? LIMIT 1`, [id],
+    `SELECT ${selectColumns} FROM companies WHERE id = ? AND id IN (SELECT company_id FROM auth_company_members WHERE user_id=?) LIMIT 1`,
+    [id, requireUserId()],
   );
   return rows[0] ? mapCompany(rows[0]) : undefined;
 }
 
 export async function createCompany(input: CompanyInput): Promise<Company> {
-  const [result] = await getDatabasePool().execute<ResultSetHeader>(
-    `INSERT INTO companies (tax_id, business_name, trade_name, email, phone)
+  const connection = await getDatabasePool().getConnection();
+  let id: number;
+  try {
+    await connection.beginTransaction();
+    const [result] = await connection.execute<ResultSetHeader>(
+      `INSERT INTO companies (tax_id, business_name, trade_name, email, phone)
      VALUES (?, ?, ?, ?, ?)`,
-    [input.taxId, input.businessName, input.tradeName ?? null, input.email ?? null, input.phone ?? null],
-  );
-  const company = await findCompanyById(result.insertId);
+      [
+        input.taxId,
+        input.businessName,
+        input.tradeName ?? null,
+        input.email ?? null,
+        input.phone ?? null,
+      ],
+    );
+    id = result.insertId;
+    await connection.execute(
+      "INSERT INTO auth_company_members (company_id,user_id) VALUES (?,?)",
+      [id, requireUserId()],
+    );
+    await connection.commit();
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+  const company = await findCompanyById(id);
   if (!company) throw new Error("No fue posible recuperar la empresa creada.");
   return company;
 }
 
-export async function updateCompany(id: number, input: CompanyInput): Promise<Company | undefined> {
+export async function updateCompany(
+  id: number,
+  input: CompanyInput,
+): Promise<Company | undefined> {
+  if (!(await findCompanyById(id))) return undefined;
   const [result] = await getDatabasePool().execute<ResultSetHeader>(
     `UPDATE companies SET tax_id = ?, business_name = ?, trade_name = ?, email = ?, phone = ?
      WHERE id = ? AND is_active = TRUE`,
-    [input.taxId, input.businessName, input.tradeName ?? null, input.email ?? null, input.phone ?? null, id],
+    [
+      input.taxId,
+      input.businessName,
+      input.tradeName ?? null,
+      input.email ?? null,
+      input.phone ?? null,
+      id,
+    ],
   );
   if (!result.affectedRows) return undefined;
   return findCompanyById(id);
 }
 
 export async function getActiveCompanyId(): Promise<number | undefined> {
-  const [rows] = await getDatabasePool().execute<Array<RowDataPacket & { companyId: string }>>(
-    "SELECT setting_value AS companyId FROM app_settings WHERE setting_key = 'active_company_id' LIMIT 1",
-  );
+  const [rows] = await getDatabasePool().execute<
+    Array<RowDataPacket & { companyId: string }>
+  >("SELECT active_company_id AS companyId FROM auth_users WHERE id=?", [
+    requireUserId(),
+  ]);
   const value = Number(rows[0]?.companyId);
-  return Number.isSafeInteger(value) && value > 0 ? value : undefined;
+  return Number.isSafeInteger(value) &&
+    value > 0 &&
+    (await findCompanyById(value))
+    ? value
+    : undefined;
 }
 
 export async function setActiveCompany(id: number): Promise<Company> {
   const company = await findCompanyById(id);
-  if (!company || !company.isActive) throw new Error("La empresa seleccionada no existe o esta inactiva.");
+  if (!company || !company.isActive)
+    throw new Error("La empresa seleccionada no existe o esta inactiva.");
   await getDatabasePool().execute(
-    `INSERT INTO app_settings (setting_key, setting_value) VALUES ('active_company_id', ?)
-     ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)`, [String(id)],
+    "UPDATE auth_users SET active_company_id=? WHERE id=?",
+    [id, requireUserId()],
   );
   return company;
 }

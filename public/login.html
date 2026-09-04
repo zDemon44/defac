@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Ingresar · Defac</title>
+    <link rel="stylesheet" href="/auth.css" />
+    <script src="/auth.js" defer></script>
+  </head>
+  <body>
+    <main class="auth-card">
+      <p class="brand">DEFAC <span>ECUADOR</span></p>
+      <h1 id="authTitle">Inicia sesión</h1>
+      <p id="authDescription">Accede a tus empresas y comprobantes.</p>
+      <nav aria-label="Acceso a la cuenta">
+        <a href="/login" id="loginTab">Iniciar sesión</a>
+        <a href="/register" id="registerTab">Crear cuenta</a>
+      </nav>
+      <form id="authForm" method="post" action="/api/auth/login">
+        <label id="nameField" hidden
+          >Nombre
+          <input
+            id="name"
+            name="name"
+            autocomplete="name"
+            minlength="2"
+            maxlength="120"
+          />
+        </label>
+        <label
+          >Correo electrónico
+          <input
+            name="email"
+            type="email"
+            autocomplete="username"
+            maxlength="254"
+            required
+          />
+        </label>
+        <label
+          >Contraseña
+          <input
+            id="password"
+            name="password"
+            type="password"
+            autocomplete="current-password"
+            minlength="12"
+            maxlength="128"
+            required
+            aria-describedby="passwordHint"
+          />
+        </label>
+        <small id="passwordHint"
+          >Entre 12 y 128 caracteres. Puedes usar una frase larga.</small
+        >
+        <label id="confirmField" hidden
+          >Repite la contraseña
+          <input
+            id="passwordConfirmation"
+            name="passwordConfirmation"
+            type="password"
+            autocomplete="new-password"
+            minlength="12"
+            maxlength="128"
+          />
+        </label>
+        <p id="authError" class="error" role="alert" hidden></p>
+        <button id="authSubmit" type="submit">Entrar</button>
+      </form>
+      <p class="notice" id="registerNotice" hidden>
+        Tu cuenta comienza sin empresas. Las empresas de otras cuentas no son
+        visibles.
+      </p>
+      <p class="footnote">
+        Este acceso es de Defac, no del SRI. No utilices tu contraseña del SRI.
+      </p>
+    </main>
+  </body>
+</html>

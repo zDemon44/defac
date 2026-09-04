@@ -15,6 +15,7 @@ import type { NormalizedInvoice } from "../models/invoice.js";
 import type { PointDocSaleRow } from "../models/pointDoc.js";
 import { parseInvoiceXml } from "../parsers/xml/factura.parser.js";
 import { getDatabasePool } from "./mysql.js";
+import { requireUserId } from "../auth/context.js";
 import { validateInvoiceOwnership } from "../services/validation/invoiceOwnership.service.js";
 
 export interface StoredInvoiceRow {
@@ -71,8 +72,8 @@ export async function loadNormalizedInvoicesByAccessKeys(
       DATE_FORMAT(authorization_date,'%Y-%m-%dT%H:%i:%s') AS authorizationDate,DATE_FORMAT(issue_date,'%d/%m/%Y') AS issueDate,
       issuer_tax_id AS ruc,issuer_business_name AS businessName,recipient_id AS recipientIdentification,recipient_business_name AS recipientBusinessName,
       establishment,emission_point AS emissionPoint,sequential,document_number AS documentNumber,subtotal,discount,tip,vat_total AS vatTotal,total
-     FROM invoices WHERE access_key IN (${placeholders})`,
-    keys,
+     FROM invoices WHERE access_key IN (${placeholders}) AND company_id IN (SELECT company_id FROM auth_company_members WHERE user_id=?)`,
+    [...keys, requireUserId()],
   );
   const ids = headers.map((row) => row.id);
   if (!ids.length) return new Map();

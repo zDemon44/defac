@@ -68,6 +68,12 @@ async function initialize() {
   $("#statusFilter").innerHTML += Object.entries(statusLabels)
     .map(([v, l]) => `<option value="${v}">${l}</option>`)
     .join("");
+  try {
+    const { user } = await api("/api/auth/me");
+    $("#accountName").textContent = user.name;
+  } catch {
+    return;
+  }
   await loadCompanies();
   try {
     const h = await api("/api/health");
@@ -167,6 +173,14 @@ $("#companySelect").addEventListener("change", async (e) => {
     state.activeCompanyId = id;
   } catch (err) {
     toast(err.message);
+  }
+});
+$("#logoutButton").addEventListener("click", async () => {
+  try {
+    await api("/api/auth/logout", { method: "POST" });
+    location.replace("/login");
+  } catch (error) {
+    toast(error.message);
   }
 });
 function clearPendingFiles() {
@@ -896,7 +910,14 @@ function toast(message) {
   toast.timer = setTimeout(() => el.classList.remove("show"), 3500);
 }
 async function api(url, options) {
-  const res = await fetch(url, options);
+  const headers = new Headers(options?.headers);
+  headers.set("X-Defac-Request", "1");
+  const res = await fetch(url, {
+    ...options,
+    headers,
+    credentials: "same-origin",
+  });
+  if (res.status === 401) location.replace("/login");
   const data = await res.json().catch(() => ({ error: "Respuesta inválida" }));
   if (!res.ok) throw new Error(data.error || "Error en la solicitud");
   return data;
